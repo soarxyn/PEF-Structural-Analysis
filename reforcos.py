@@ -1,10 +1,5 @@
 from enum import Enum
-
-class Vec3d:
-  def __init__(self, x, y, z):
-    self.x : float = x
-    self.y : float = y
-    self.z : float = z
+from auxilary.vectors import Vec3d
 
 class TipoReforco(Enum):
   APOIO : tuple = (1, 0)
