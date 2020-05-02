@@ -1,5 +1,5 @@
 from enum import Enum
-from auxilary.vectors import Vec3d
+from auxiliary.vectors import Vec3d
 
 class TipoReforco(Enum):
   APOIO : tuple = (1, 0)
