@@ -38,21 +38,3 @@ class Barra(object):
             i = i + 1
             ponto += ponto
         return Bb
-            
-F = Vec3d(1, 3, 5)
-B = Barra(5, 30, 'B')
-B.nome = "B1"
-B.forcas[3] = F
-print(B.forcas[3].x)
-print(B.nome)
-Ba = B.CriaCorte1(3)
-print(Ba.forcas[3].y)
-print(Ba.nome)
-Bb = B.CriaCorte2(3)
-print(Ba.forcas[0].z)
-print(Bb.nome)
-
-del F
-del Ba
-del Bb
-del B
