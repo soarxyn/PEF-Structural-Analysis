@@ -185,6 +185,3 @@ def invert(m : Matrix3x3) -> Matrix3x3:
     c : Vector3 = solve(m, Vector3(0, 0, 1))
 
     return Matrix3x3([[a.x, b.x, c.x], [a.y, b.y, c.y], [a.z, b.z, c.z]])
-
-c = Matrix3x3([[1, -1, 2], [1, 2, 3], [2, 1, 1]])
-print(c * Vector3(-3, 2, 1))
