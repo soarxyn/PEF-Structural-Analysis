@@ -175,7 +175,7 @@ class App:
             self.snap_areas.clear()
     
     def __init__(self, root):
-        self.drawing_area = Canvas(root, width = 1280, height = 720)
+        self.drawing_area = Canvas(root, width = 400, height = 300)
         self.drawing_area.pack(fill = BOTH, expand = True)
 
         self.drawing_area.bind("<Motion>", self.motion)
