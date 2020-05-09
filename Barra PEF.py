@@ -1,7 +1,7 @@
-from auxiliary.vectors import Vec3d
+from auxiliary.algebra import Vector3
 
 class Barra(object):
-    forcas : Vec3d = []
+    forcas : list(Vector3) = []
     def __init__(self, comprimento, angulo, nome):
         if(comprimento > 0):
             self.comprimento : float = comprimento
