@@ -1,5 +1,5 @@
 import math
-from auxiliary.algebra import Vector3
+from auxiliary.algebra import *
 
 
 class Concentrated:
@@ -7,37 +7,35 @@ class Concentrated:
     magnitude: float = None
     angle: float = None
 
-    def __init__(self, magnitude: float, angle: float):
+    def __init__(self, magnitude : float, angle : float):
         self.magnitude = magnitude
         self.angle = angle
 
         # Getting Force Vector from Magnitude and Angle
         self.forceVector = Vector3(
-            self.magnitude * math.cos(self.angle),
-            self.magnitude * math.sin(self.angle),
+            magnitude * math.cos(angle),
+            magnitude * math.sin(angle),
             0,
         )
 
 
 class Distributed:
-    initialPositionForceVector: Vector3 = None
-    finalPositionForceVector: Vector3 = None
-    magnitude: float = None
-    angle: float = None
+    length : float = None
+    polynomial : Polynomial = Polynomial()
+    angle : float = None
+    equivalent : Concentrated = None
 
-    def __init__(self, x1, y1, x2, y2, magnitude, angle):
-        self.initialPositionForceVector = Vector3(x1, y1)
-        self.finalPositionForceVector = Vector3(x2, y2)
-        self.magnitude = magnitude
-        self.angle = angle
+    def __init__(self, p1 : float, p2: float, p : Polynomial, a : float):
+        self.length = abs(p2 - p1)
+        self.polynomial = p
+        self.angle = a
+        self.equivalent = Concentrated(p.integrate(0, abs(p2 - p1)), a)
 
 
 class Momentum:
-    momentumPosition: Vector3 = None
     magnitude: float = None
 
-    def __init__(self, x, y, magnitude):
-        self.momentumPosition = Vector3(x, y)
+    def __init__(self, magnitude : float):
         self.magnitude = magnitude
 
 
