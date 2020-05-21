@@ -25,14 +25,21 @@ class Distributed:
 		self.distribution = distribution
 
 	def equivalent(self) -> Tuple[Concentrated, float]:				# tuple float is the equivalent force's point of application
-		integral = integrate(self.distribution, 0, self.length)
+		p1: Polynomial = Polynomial(self.distribution.coefficients)
+		p1.coefficients.insert(0, 0)
+		integral: float = integrate(self.distribution, 0, self.length)
 		return [
 			Concentrated(integral),
-			integrate(self.distribution*Polynomial([0, 1]), 0, self.length)/integral
+			integrate(p1, 0, self.length)/integral
 		]
 
-	def angledComponents(self, angle: float) -> Tuple[Distributed, Distributed]:					# the first load is applied perpendicularly to the referential axis, while the second one is applied in parallel
-		basePolynomial: Polynomial = self.distribution - Polynomial([0, 1/math.tan(angle)])
+	def angledComponents(self, angle: float) -> Tuple[Distributed, Distributed]:	# the first load is applied perpendicularly to the referential axis, while the second one is applied in parallel
+		basePolynomial: Polynomial = Polynomial(self.distribution.coefficients)
+		if self.distribution.degree < 1:
+			basePolynomial.coefficients.append(-1/math.tan(angle))
+			basePolynomial.degree = 1
+		else:
+			basePolynomial.coefficients[1] -= 1/math.tan(angle)
 		return [
 			Distributed(self.length/math.sin(angle), math.sin(angle)*basePolynomial),
 			Distributed(self.length/math.sin(angle), -math.cos(angle)*basePolynomial)
