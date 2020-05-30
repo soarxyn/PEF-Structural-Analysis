@@ -27,6 +27,7 @@ class Distributed:
 	def equivalent(self) -> Tuple[Concentrated, float]:				# tuple float is the equivalent force's point of application
 		p1: Polynomial = Polynomial(self.distribution.coefficients)
 		p1.coefficients.insert(0, 0)
+		p1.degree = self.distribution.degree + 1
 		integral: float = integrate(self.distribution, 0, self.length)
 		return [
 			Concentrated(integral),
