@@ -188,7 +188,7 @@ def invert(m : Matrix3x3) -> Matrix3x3:
 	return Matrix3x3([[a.x, b.x, c.x], [a.y, b.y, c.y], [a.z, b.z, c.z]])
 
 precise_angles : Dict[float, Tuple[float, float, float, float]] = {
-	0   : (1, 0, 0, None),
+	0   : (0, 1, 0, None),
 	30  : (0.5, sqrt(3) / 2, sqrt(3) / 3, sqrt(3)),
 	45  : (sqrt(2) / 2, sqrt(2) / 2, 1, 1),
 	60  : (sqrt(3) / 2, 0.5, sqrt(3), sqrt(3) / 3),
@@ -204,7 +204,7 @@ precise_angles : Dict[float, Tuple[float, float, float, float]] = {
 	300 : (-sqrt(3) / 2, 0.5, -sqrt(3), -sqrt(3) / 3),
 	315 : (-sqrt(2) / 2, sqrt(2) / 2, -1, -1),
 	330 : (-0.5, sqrt(3) / 2, -sqrt(3) / 3, -sqrt(3)),
-	360 : (1, 0, 0, None)
+	360 : (0, 1, 0, None)
 }
 
 def psin(angle : float) -> float:

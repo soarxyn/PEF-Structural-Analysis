@@ -1,191 +1,191 @@
 from tkinter import *
-from tkinter import ttk
 from ttkthemes import themed_tk as tk
-from math import atan2, degrees, tan, radians, sqrt, sin, cos, dist
-from collections import deque
+from typing import Deque, List, Tuple
+from enum import Enum
+from dataclasses import dataclass, field
+from system import System
+from collections import deque, namedtuple
+from math import dist, degrees, atan2, copysign
+from auxiliary.algebra import psin, pcos, ptan, Vector3
+from functools import partial
+from beam import Beam
 
-root = tk.ThemedTk()
-root.set_theme("breeze")
+class InsertionMode(Enum):
+    BEAM = 0
+    FORCE = 1
+    SUPPORT = 2
 
-class App:
+class ActionType(Enum):
+    ADD_BEAM = 0
+    ADD_FORCE = 1
+    ADD_SUPPORT = 2
 
-    x_pos, y_pos = None, None
-    x1, y1, x2, y2 = None, None, None, None
-    left_button = False
-    shift_press = False
-    poly, arc, text, preview = None, None, None, None
-    drawing_area = None
-    snap_points = list()
-    snap_areas = list()
-    bars = deque()
-    labels = deque()
+@dataclass
+class Action:
+    related : List[object]
+    type : ActionType
 
-    def draw_bar(self, event = None, preview = False):
-        end_point = (round(event.x, 1), round(event.y, 1))
-        angle : float = degrees(atan2(-round(event.y, 1) + self.y1, round(event.x, 1) - self.x1))
+Point = namedtuple("Point", ("x", "y"))
+sign = partial(copysign, 1)
 
-        if self.shift_press:
-            near_snap = False 
+def trunc(a):
+    return round(round(a, 1), 1)
 
-            for point in self.snap_points:
-                if dist(point, (round(event.x, 1), round(event.y, 1))) <= 40 and point != (self.x1, self.y1):
-                    near_snap = True 
-                    end_point = point 
-                    angle = degrees(atan2(-point[1] + self.y1, point[0] - self.x1))
-            
-            if not near_snap:
-                snap_angle = abs(angle)
+class MainWidget:
 
-                if snap_angle < (45.0 - snap_angle):
-                    snap_angle = 0
-                elif (snap_angle - 30) < (45 - snap_angle):
-                    snap_angle = 30
-                elif (snap_angle - 45) < (60 - snap_angle):
-                    snap_angle = 45
-                elif (snap_angle - 60) < (90 - snap_angle):
-                    snap_angle = 60
-                elif (snap_angle - 90) < (120 - snap_angle):
-                    snap_angle = 90
-                elif (snap_angle - 120) < (135 - snap_angle):
-                    snap_angle = 120
-                elif (snap_angle - 135) < (150 - snap_angle):
-                    snap_angle = 135
-                elif (snap_angle - 150) < (180 - snap_angle):
-                    snap_angle = 150
-                else:
-                    snap_angle = 180
-
-                angle = snap_angle if angle > 0 else -snap_angle
-                end_point = (round(event.x, 1), round(event.y, 1))
-
-        (x, y) = end_point
-        pos = None
-        bar = None
-
-        if angle != 90 and angle != -90:
-            pos = (self.x1, self.y1, x, self.y1 - (x - self.x1) * tan(radians(angle)))
-            if preview:
-                self.poly = event.widget.create_line(pos, smooth = True, dash = (10, 10))
-            else:
-                bar = event.widget.create_line(pos, smooth = True, width = 5, fill="#404040")
-        else:
-            pos = (self.x1, self.y1, self.x1, y)
-            if preview:
-                self.poly = event.widget.create_line(pos, smooth = True, dash = (10, 10))
-            else:
-                bar = event.widget.create_line(pos, smooth = True, width = 5, fill="#404040")        
-        
-        if bar != None:
-            self.bars.append(bar)
-
-        (x1, y1, x2, y2) = pos
-        size = sqrt((x2 - x1)**2 + (y2 - y1)**2)/10
-
-        if size > 0:
-            if preview:
-                self.preview = event.widget.create_text((x1 + x2) / 2 - 20 * sin(radians(angle)), (y1 + y2) / 2 - 20 * cos(radians(angle)), font = "Helvetica", text = "{0:.1f} m".format(size), angle = angle if angle > 0 else 360 + angle)
-            else:
-                self.labels.append(event.widget.create_text((x1 + x2) / 2 - 20 * sin(radians(angle)), (y1 + y2) / 2 - 20 * cos(radians(angle)), font = "Helvetica", text = "{0:.1f} m".format(size), angle = angle if angle > 0 else 360 + angle))
-
-        return (angle, x2, y2)
-
-    def lbd(self, event = None):
-        self.left_button = True
-        (self.x1, self.y1) = (round(round(event.x, 1), 1), round(round(event.y, 1), 1))
-        (self.x_pos, self.y_pos) = (round(event.x, 1), round(event.y, 1))
-        
-        if len(self.snap_points) == 0:
-            self.snap_points.append((round(event.x, 1), round(event.y, 1)))
-        else:
-            near_snap = False
-            for point in self.snap_points:
-                (x, y) = point 
-
-                if sqrt((x - self.x1)**2 + (y - self.y1)**2) <= 40 and self.shift_press:
-                    (self.x1, self.y1) = (x, y)
-                    near_snap = True
-
-            if not near_snap:
-                self.snap_points.append((round(event.x, 1), round(event.y, 1)))
-        
-    def lbr(self, event = None):
-        self.left_button = False 
-        (self.x2, self.y2) = (round(event.x, 1), round(event.y, 1))
-        
-        (angle, x2, y2) = self.draw_bar(event)
-
-        if not ((x2, y2) in self.snap_points):
-            self.snap_points.append((x2, y2))
-
-        if self.poly != None:
-            event.widget.delete(self.poly)
-
-        if self.arc != None:
-            event.widget.delete(self.arc)
-            
-        if self.text != None:
-            event.widget.delete(self.text)
-
-        if self.preview != None:
-            event.widget.delete(self.preview)
-
-    def motion(self, event = None):
-        (self.x_pos, self.y_pos) = (round(event.x, 1), round(event.y, 1))
-        
-        if self.poly != None:
-                event.widget.delete(self.poly)
-
-        if self.arc != None:
-            event.widget.delete(self.arc)
-            
-        if self.text != None:
-            event.widget.delete(self.text)
-
-        if self.preview != None:
-            event.widget.delete(self.preview)
-
-        if self.left_button:            
-            angle = self.draw_bar(event, True)[0]
-
-            self.arc = event.widget.create_arc(self.x1 - 20, self.y1 - 20, self.x1 + 20, self.y1 + 20, start = 0, extent = angle)
-            self.text = event.widget.create_text(self.x1 + 40, self.y1 + (20 * abs(angle) / angle) if angle != 0 else self.y1 + 20, font = "Helvetica", text = "{0:.1f}º".format(angle))
-            
-
-    def keydown(self, event = None):
-        if event.keysym in ("Shift_L", "Shift_R"):
-            self.shift_press = True
-            
-            for point in self.snap_points:
-                area = self.drawing_area.create_oval(point[0] - 20, point[1] - 20, point[0] + 20, point[1] + 20, dash = (1, 2))
-                self.snap_areas.append(area)
-        elif event.char == "z":
-            if len(self.bars) > 0:
-                self.drawing_area.delete(self.bars.pop())
-                self.drawing_area.delete(self.labels.pop())
-        
-
-
-    def keyup(self, event = None):
-        if event.keysym in ("Shift_L", "Shift_R"):
-            self.shift_press = False
-            
-            for area in self.snap_areas:
-                self.drawing_area.delete(area)
-            
-            self.snap_areas.clear()
-    
     def __init__(self, root):
-        self.drawing_area = Canvas(root, width = 400, height = 300)
+        self.drawing_area = Canvas(root, width = 1360, height = 768)
         self.drawing_area.pack(fill = BOTH, expand = True)
+        
+        self.system : System = System()
+        self.insertionMode : InsertionMode = InsertionMode.BEAM
+        self.actions : Deque[Action] = deque()
+        
+        self.isMousePressed : bool = False
+        self.currentMousePosition : Point = Point(0, 0)
+        self.firstWaypoint : Point = Point(0, 0)
+        self.snapPoints : List[Point] = list()
+        self.snapIndicators : List = list()
 
-        self.drawing_area.bind("<Motion>", self.motion)
-        self.drawing_area.bind("<ButtonPress-1>", self.lbd)
-        self.drawing_area.bind("<ButtonRelease-1>", self.lbr)
-        root.bind("<KeyPress>", self.keydown)
-        root.bind("<KeyRelease>", self.keyup)
+        self.isShiftPressed : bool = False
+        self.isCtrlPressed : bool = False
 
-root.title("PEF - Análise de Estruturas 2D")
-root.geometry("1920x1080")
-app = App(root)
-root.mainloop()
+        self.beamPreview = None
+        self.labelPreview = None
+        self.arcPreview = None
+        self.anglePreview = None
 
+        self.drawing_area.bind("<ButtonPress-1>", self.leftMousePressed)
+        self.drawing_area.bind("<ButtonRelease-1>", self.leftMouseReleased)
+        self.drawing_area.bind("<Motion>", self.mouseMotion)
+        root.bind("<KeyPress>", self.keyboardPress)
+        root.bind("<KeyRelease>", self.keyboardRelease)
+        root.bind("<Control-z>", self.undo)
+
+    def drawBeam(self, start : Point, end : Point, beamAngle : float, size : float, event = None) -> Tuple[object, object]:
+        if self.beamPreview != None:
+            event.widget.delete(self.beamPreview)
+
+        if self.arcPreview != None:
+            event.widget.delete(self.arcPreview)
+
+        if self.labelPreview != None:
+            event.widget.delete(self.labelPreview)
+
+        if self.anglePreview != None:
+            event.widget.delete(self.anglePreview)
+
+        beam = event.widget.create_line((start, end), smooth = True, width = 5, fill="#404040")
+
+        textAngle = beamAngle if 0 <= beamAngle < 90 else beamAngle - 180 if beamAngle > 90 else 360 + beamAngle if - 90 < beamAngle < 0 else beamAngle + 180
+        length = event.widget.create_text((start.x + end.x) / 2 - 20 * psin(beamAngle), (start.y + end.y) / 2 - 20 * pcos(beamAngle), font = "Helvetica", text = "{0:1.1f} m".format(size), angle = textAngle)
+
+        return (beam, length)
+
+    def drawBeamPreview(self, start : Point, end : Point, beamAngle : float, size: float, event = None):
+        if self.beamPreview != None:
+            event.widget.delete(self.beamPreview)
+
+        if self.arcPreview != None:
+            event.widget.delete(self.arcPreview)
+
+        if self.labelPreview != None:
+            event.widget.delete(self.labelPreview)
+
+        if self.anglePreview != None:
+            event.widget.delete(self.anglePreview)
+
+        self.beamPreview = event.widget.create_line((start, end), smooth = True, dash = (10, 10))
+        self.arcPreview = event.widget.create_arc(start.x - 20, start.y - 20, start.x + 20, start.y + 20, start = 0, extent = beamAngle)
+        self.anglePreview = event.widget.create_text(start.x + 40, start.y + (20 * sign(beamAngle)) if beamAngle != 0 else start.y + 20, font = "Helvetica", text = "{0:.1f}º".format(beamAngle))
+
+        textAngle = beamAngle if 0 <= beamAngle < 90 else beamAngle - 180 if beamAngle > 90 else 360 + beamAngle if - 90 < beamAngle < 0 else beamAngle + 180
+        self.labelPreview = event.widget.create_text((start.x + end.x) / 2 - 20 * psin(beamAngle), (start.y + end.y) / 2 - 20 * pcos(beamAngle), font = "Helvetica", text = "{0:1.1f} m".format(size), angle = textAngle)
+
+    def beamParameters(self, start : Point, end : Point) -> Tuple[Point, Point, float, float]:
+        angle : float = 0
+        nearSnapPoint : bool = False 
+
+        if self.isShiftPressed:
+            for point in self.snapPoints:
+                if dist(point, end) <= 40 and point != start:
+                    nearSnapPoint = True
+                    end = point
+
+        angle = atan2(start.y - end.y, end.x - start.x)
+        angle = degrees(angle)
+
+        if self.isShiftPressed and not nearSnapPoint:
+            snap : float = abs(angle)
+
+            snaps : List[float] = [0, 30, 45, 60, 90, 120, 135, 150, 180]
+            transform : List[float] = [snap,  30 - snap, 45 - snap, 60 - snap, 90 - snap, 120 - snap, 135 - snap, 150 - snap, 180 - snap]
+            transform = list(map(abs, transform))
+            snap = snaps[transform.index(min(transform))]
+            angle = snap if angle > 0 else - snap
+
+        end = Point(end.x, start.y - (end.x  - start.x) * ptan(angle)) if abs(angle) != 90 else Point(start.x, end.y)
+        length : float = dist(end, start) / 10
+
+        return (start, end, length, angle)
+
+    def leftMousePressed(self, event = None):
+        self.isMousePressed = True
+        self.firstWaypoint = Point(trunc(event.x), trunc(event. y))
+
+        if not len(self.snapPoints) == 0:
+            for point in self.snapPoints:
+                if dist(point, self.firstWaypoint) <= 40 and self.isShiftPressed:
+                    self.firstWaypoint = point
+                    break
+
+    def leftMouseReleased(self, event = None):
+        self.isMousePressed = False
+
+        if self.insertionMode == InsertionMode.BEAM:
+            params = self.beamParameters(self.firstWaypoint, self.currentMousePosition)
+            (beam, length) = self.drawBeam(params[0], params[1], params[3], params[2], event)
+
+            self.actions.append(Action(related = [beam, length], type = ActionType.ADD_BEAM))
+            self.system.beams.append((Beam(params[3]), Vector3(params[0].x, params[0].y, 0), params[2], Vector3(params[1].x, params[1].y, 0)))
+
+            if not params[0] in self.snapPoints:
+                self.snapPoints.append(params[0])
+
+            if not params[1] in self.snapPoints:
+                self.snapPoints.append(params[1])
+
+    def mouseMotion(self, event = None):
+        self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
+
+        if self.isMousePressed:
+            if self.insertionMode == InsertionMode.BEAM:
+                params = self.beamParameters(self.firstWaypoint, self.currentMousePosition)
+                self.drawBeamPreview(params[0], params[1], params[3], params[2], event)
+
+    def keyboardPress(self, event = None):
+        if event.keysym in ("Shift_L", "Shift_R"):
+            self.isShiftPressed = True
+
+            for point in self.snapPoints:
+                indicator = self.drawing_area.create_oval(point[0] - 20, point[1] - 20, point[0] + 20, point[1] + 20, dash = (1, 2))
+                self.snapIndicators.append(indicator)
+
+    def keyboardRelease(self, event = None):
+        if event.keysym in ("Shift_L", "Shift_R"):
+            self.isShiftPressed = False
+
+            for indicator in self.snapIndicators:
+                self.drawing_area.delete(indicator)
+
+    def undo(self, event = None):
+        pass
+
+if __name__ == "__main__":
+    root = tk.ThemedTk()
+    root.set_theme("breeze")
+    root.title("PEF3208 - Análise de Estruturas 2D")
+    root.geometry("1360x768")
+
+    mainWidget : MainWidget = MainWidget(root)
+    root.mainloop()
