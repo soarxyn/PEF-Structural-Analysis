@@ -179,7 +179,7 @@ class MainWidget:
                 self.drawing_area.delete(indicator)
 
     def undo(self, event = None):
-        pass
+        print("Oi!")
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
