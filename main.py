@@ -1,6 +1,6 @@
 from tkinter import *
 from ttkthemes import themed_tk as tk
-from typing import Deque, List, Tuple, Iterable, Iterator
+from typing import Deque, List, Tuple, Iterable, Iterator, Optional, Callable
 from enum import IntEnum
 from dataclasses import dataclass, field
 from system import System
@@ -54,11 +54,13 @@ class MainWidget:
 
         self.isShiftPressed : bool = False
         self.isCtrlPressed : bool = False
+        self.inserting : bool = False
 
         self.beamPreview = None
         self.labelPreview = None
         self.arcPreview = None
         self.anglePreview = None
+        self.forcePreview = None
 
         self.insertionText = None
         self.arrowIndicator = None
@@ -74,7 +76,8 @@ class MainWidget:
         root.bind("<Control-z>", self.undo)
 
     def postInit(self, event = None):
-        self.insertionText = self.drawing_area.create_text(20, 20, font = "Helvetica", text = "Modo de Inserção: Barra", anchor = W)
+        if self.insertionText == None:
+            self.insertionText = self.drawing_area.create_text(20, 20, font = "Helvetica", text = "Modo de Inserção: Barra", anchor = W)
 
     def drawBeam(self, start : Point, end : Point, beamAngle : float, size : float, event = None) -> Tuple[object, object]:
         if self.beamPreview != None:
@@ -156,12 +159,15 @@ class MainWidget:
     def leftMouseReleased(self, event = None):
         self.isMousePressed = False
 
+        if self.inserting:
+            return
+
         if self.insertionMode == InsertionMode.BEAM:
             params = self.beamParameters(self.firstWaypoint, self.currentMousePosition)
             (beam, length) = self.drawBeam(params[0], params[1], params[3], params[2], event)
 
             self.actions.append(Action(related = [beam, length, params[0], params[1]], type = ActionType.ADD_BEAM))
-            self.system.beams.append((Beam(params[3]), Vector3(params[0].x, params[0].y, 0), params[2], Vector3(params[1].x, params[1].y, 0)))
+            self.system.beams.append((Beam(params[3]), Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
 
             if not params[0] in self.snapPoints:
                 self.snapPoints.append(params[0])
@@ -179,6 +185,19 @@ class MainWidget:
                     for h in range(-15, 15):
                         if self.ownedDomain[x + w][y + h] == 0:
                             self.ownedDomain[x + w][y + h] = barID
+        
+        elif self.insertionMode == InsertionMode.FORCE:
+            owner : int = self.ownedDomain[self.currentMousePosition.x][self.currentMousePosition.y]
+            
+            if owner != 0:
+                self.inserting = True
+                beam = self.system.beams[owner - 1]
+
+                self.forcePreview = self.drawing_area.create_line(beam[1].x, beam[1].y - 50, beam[1].x, beam[1].y, arrow = LAST, width = 4.0, activefill = "blue", smooth = True)
+                self.labelPreview = self.drawing_area.create_text(beam[1].x + 10, beam[1].y - 25, font = "Helvetica", text = "1 kN", anchor = W)
+                
+                support = Toplevel(self.drawing_area)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Força", self.currentMousePosition.x + 350 + trunc(beam[0].length * 10), self.currentMousePosition.y, InsertionMode.FORCE, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2])
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -216,6 +235,8 @@ class MainWidget:
             self.isShiftPressed = False
             for indicator in self.snapIndicators:
                 self.drawing_area.delete(indicator)
+        elif self.inserting:
+            return
         elif event.char == "0":
             self.insertionMode = InsertionMode.BEAM
         elif event.char == "1":
@@ -229,6 +250,7 @@ class MainWidget:
 
         if self.insertionText != None:
             self.drawing_area.delete(self.insertionText)
+            self.insertionText = None
 
         insertionModes : List[str] = ["Barra", "Força", "Carga Distribuída", "Momento", "Reforço"]        
         self.insertionText = self.drawing_area.create_text(20, 20, font = "Helvetica", text = f"Modo de Inserção: {insertionModes[self.insertionMode]}", anchor = W)
@@ -260,6 +282,80 @@ class MainWidget:
 
                     if not beam[3] in self.snapPoints:
                         self.snapPoints.append(Point(beam[3].x, beam[3].y))
+
+class SupportWidget:
+
+    def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float]):
+        self.master = master
+        self.master.geometry(f"400x300+{x}+{y}")
+        self.master.title(name)
+        
+        self.frame = Frame(self.master)
+        self.frame.pack()
+
+        self.master_window = master_window
+        
+        self.mode = mode
+        self.beamAngle = beamAngle
+
+        if mode == InsertionMode.FORCE:
+            self.master_force = force
+
+            self.angleContent = StringVar()
+            self.angleContent.trace("w", lambda a, b, c: self.updateForce())
+            
+            self.lengthContent = StringVar()
+            self.lengthContent.trace("w", lambda a, b, c: self.updateForce())
+            
+            self.positionContent = StringVar()
+            self.positionContent.trace("w", lambda a, b, c: self.updateForce())
+
+            self.angleContent.set("90")
+            self.lengthContent.set("1")
+            self.positionContent.set("0")
+
+            angleLabel = Label(self.frame, font = "Helvetica", text = "Ângulo: ")
+            angleLabel.grid(row = 1, column = 0, padx = 3, pady = 20)
+
+            angleEntry = Entry(self.frame, textvariable = self.angleContent)
+            angleEntry.grid(row = 1, column = 1)
+
+            degreesLabel = Label(self.frame, font = "Helvetica", text = "º")
+            degreesLabel.grid(row = 1, column = 2, padx = 2)
+
+            lengthLabel = Label(self.frame, font = "Helvetica", text = "Módulo: ")
+            lengthLabel.grid(row = 2, column = 0)
+
+            lengthEntry = Entry(self.frame, textvariable = self.lengthContent)
+            lengthEntry.grid(row = 2, column = 1)
+
+            newtonLabel = Label(self.frame, font = "Helvetica", text = "kN")
+            newtonLabel.grid(row = 2, column = 2, padx = 2)
+
+            positionLabel = Label(self.frame, font = "Helvetica", text = "Posição: ")
+            positionLabel.grid(row = 3, column = 0)
+
+            positionEntry = Entry(self.frame, textvariable = self.positionContent)
+            positionEntry.grid(row = 3, column = 1, pady = 20)
+
+            metersLabel = Label(self.frame, font = "Helvetica", text = "m")
+            metersLabel.grid(row = 3, column = 2)
+
+    def updateForce(self):
+        force_angle = float(self.angleContent.get()) if len(self.angleContent.get()) != 0 else 0
+        length = float(self.lengthContent.get()) if len(self.lengthContent.get()) != 0 else 1
+        pos = float(self.positionContent.get()) if len(self.positionContent.get()) != 0 else 0
+
+        scale = 1 if 0 <= length < 10 else 0.1 if 10 <= length < 100 else 0.01 if 100 <= length < 1000 else 0.001
+
+        tipX : float = self.master_force.x + (pos * pcos(self.beamAngle) * 10)
+        tipY : float = self.master_force.y - (pos * psin(self.beamAngle) * 10)
+
+        self.master_window.drawing_area.delete(self.master_window.forcePreview)
+        self.master_window.forcePreview = self.master_window.drawing_area.create_line(tipX - 20 * length * scale * pcos(force_angle), tipY - 20 * length * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 4.0, activefill = "blue", smooth = True)
+        self.master_window.drawing_area.delete(self.master_window.labelPreview)
+        self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 10 - 40 * pcos(force_angle) if force_angle <= 180 else tipX, tipY - 20 - 40 * psin(force_angle) if force_angle < 180 else tipY - 20, font = "Helvetica", text = f"{length} kN", anchor = W)
+        
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
