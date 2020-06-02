@@ -314,6 +314,9 @@ class SupportWidget:
             self.lengthContent.set("1")
             self.positionContent.set("0")
 
+            introLabel = Label(self.frame, font = "Helvetica", text = "Parâmetros de Força Concentrada")
+            introLabel.grid(row = 0, column = 1, padx = 0, pady = (5, 0))
+
             angleLabel = Label(self.frame, font = "Helvetica", text = "Ângulo: ")
             angleLabel.grid(row = 1, column = 0, padx = 3, pady = 20)
 
@@ -342,7 +345,7 @@ class SupportWidget:
             metersLabel.grid(row = 3, column = 2)
 
     def updateForce(self):
-        force_angle = float(self.angleContent.get()) if len(self.angleContent.get()) != 0 else 0
+        force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
         length = float(self.lengthContent.get()) if len(self.lengthContent.get()) != 0 else 1
         pos = float(self.positionContent.get()) if len(self.positionContent.get()) != 0 else 0
 
