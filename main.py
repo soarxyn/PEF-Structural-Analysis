@@ -10,6 +10,7 @@ from auxiliary.algebra import psin, pcos, ptan, Vector3
 from functools import partial
 from beam import Beam
 from PIL import ImageTk, Image
+from force import Concentrated, Distributed
 
 class InsertionMode(IntEnum):
     BEAM = 0
@@ -197,7 +198,7 @@ class MainWidget:
                 self.labelPreview = self.drawing_area.create_text(beam[1].x + 10, beam[1].y - 25, font = "Helvetica", text = "1 kN", anchor = W)
                 
                 support = Toplevel(self.drawing_area)
-                self.supportWindow = SupportWidget(support, self, "Parâmetros: Força", self.currentMousePosition.x + 350 + trunc(beam[0].length * 10), self.currentMousePosition.y, InsertionMode.FORCE, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2])
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Força", self.currentMousePosition.x + 350 + trunc(beam[0].length * 10), self.currentMousePosition.y, InsertionMode.FORCE, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -282,10 +283,15 @@ class MainWidget:
 
                     if not beam[3] in self.snapPoints:
                         self.snapPoints.append(Point(beam[3].x, beam[3].y))
+            
+            if lastAction.type == ActionType.ADD_CONCENTRATED:
+                self.system.beams[lastAction.related[2] - 1][0].concentratedList.pop()
+                self.drawing_area.delete(lastAction.related[0])
+                self.drawing_area.delete(lastAction.related[1])
 
 class SupportWidget:
 
-    def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float]):
+    def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float], beamID: Optional[int]):
         self.master = master
         self.master.geometry(f"400x300+{x}+{y}")
         self.master.title(name)
@@ -297,6 +303,7 @@ class SupportWidget:
         
         self.mode = mode
         self.beamAngle = beamAngle
+        self.beamID = beamID
 
         if mode == InsertionMode.FORCE:
             self.master_force = force
@@ -344,6 +351,9 @@ class SupportWidget:
             metersLabel = Label(self.frame, font = "Helvetica", text = "m")
             metersLabel.grid(row = 3, column = 2)
 
+            insertButton = Button(self.frame, text = "Inserir Força", font = "Helvetica", command = lambda: self.insertForce())
+            insertButton.grid(row = 4, column = 1)
+
     def updateForce(self):
         force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
         length = float(self.lengthContent.get()) if len(self.lengthContent.get()) != 0 else 1
@@ -359,6 +369,28 @@ class SupportWidget:
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
         self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 10 - 40 * pcos(force_angle) if force_angle <= 180 else tipX, tipY - 20 - 40 * psin(force_angle) if force_angle < 180 else tipY - 20, font = "Helvetica", text = f"{length} kN", anchor = W)
         
+    def insertForce(self):
+        force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+        length = float(self.lengthContent.get()) if len(self.lengthContent.get()) != 0 else 1
+        pos = float(self.positionContent.get()) if len(self.positionContent.get()) != 0 else 0
+
+        scale = 1 if 0 <= length < 10 else 0.1 if 10 <= length < 100 else 0.01 if 100 <= length < 1000 else 0.001
+
+        tipX : float = self.master_force.x + (pos * pcos(self.beamAngle) * 10)
+        tipY : float = self.master_force.y - (pos * psin(self.beamAngle) * 10)
+
+        self.master_window.system.beams[self.beamID - 1][0].concentratedList.append((Concentrated(length), pos, force_angle))
+        self.master_window.drawing_area.delete(self.master_window.forcePreview)
+        self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+        force = self.master_window.drawing_area.create_line(tipX - 20 * length * scale * pcos(force_angle), tipY - 20 * length * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 4.0, activefill = "blue", smooth = True)
+        label = self.master_window.drawing_area.create_text(tipX + 10 - 40 * pcos(force_angle) if force_angle <= 180 else tipX, tipY - 20 - 40 * psin(force_angle) if force_angle < 180 else tipY - 20, font = "Helvetica", text = f"{length} kN", anchor = W)
+        
+        self.master_window.actions.append(Action(related = (force, label, self.beamID), type = ActionType.ADD_CONCENTRATED))
+
+        self.master_window.inserting = False
+        self.master.destroy()
+
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
