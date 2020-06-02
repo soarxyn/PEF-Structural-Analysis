@@ -8,6 +8,7 @@ from support import Support
 class System:
   beams: List[Tuple[Beam, Vector3, float, Vector3]] = [] # the tuple vector is the beam's position, with respect to the center of the
                                                 # coordinate system, while the float is its angle with respect to the x axis
+
   def solveSystem(self):
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     b: Vector3 = Vector3(0, 0, 0)
