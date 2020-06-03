@@ -198,7 +198,20 @@ class MainWidget:
                 self.labelPreview = self.drawing_area.create_text(beam[1].x + 10, beam[1].y - 25, font = "Helvetica", text = "1 kN", anchor = W)
                 
                 support = Toplevel(self.drawing_area)
-                self.supportWindow = SupportWidget(support, self, "Parâmetros: Força", self.currentMousePosition.x + 350 + trunc(beam[0].length * 10), self.currentMousePosition.y, InsertionMode.FORCE, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Força", self.currentMousePosition.x + 350, self.currentMousePosition.y, InsertionMode.FORCE, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
+
+        elif self.insertionMode == InsertionMode.DISTRIBUTED:
+            owner : int = self.ownedDomain[self.currentMousePosition.x][self.currentMousePosition.y]
+
+            if owner != 0:
+                self.inserting = True
+                beam = self.system.beams[owner - 1]
+
+                self.forcePreview = list()
+
+                support = Toplevel(self.drawing_area)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Carga Distribuída", self.currentMousePosition.x + 350, self.currentMousePosition.y, InsertionMode.DISTRIBUTED, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
+
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -293,7 +306,7 @@ class SupportWidget:
 
     def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float], beamID: Optional[int]):
         self.master = master
-        self.master.geometry(f"400x300+{x}+{y}")
+        self.master.geometry(f"450x300+{x}+{y}")
         self.master.title(name)
         
         self.frame = Frame(self.master)
@@ -304,10 +317,9 @@ class SupportWidget:
         self.mode = mode
         self.beamAngle = beamAngle
         self.beamID = beamID
+        self.master_force = force
 
         if mode == InsertionMode.FORCE:
-            self.master_force = force
-
             self.angleContent = StringVar()
             self.angleContent.trace("w", lambda a, b, c: self.updateForce())
             
@@ -353,6 +365,67 @@ class SupportWidget:
 
             insertButton = Button(self.frame, text = "Inserir Força", font = "Helvetica", command = lambda: self.insertForce())
             insertButton.grid(row = 4, column = 1)
+        
+        elif mode == InsertionMode.DISTRIBUTED:
+            self.angleContent = StringVar()
+            self.angleContent.trace("w", lambda a, b, c: self.updateDistributed())
+
+            self.radioContent = IntVar()
+            self.lastRadio = None
+
+            self.startPosContent = StringVar()
+            self.startPosContent.trace("w", lambda a, b, c: self.updateDistributed())
+
+            self.endPosContent = StringVar()
+            self.endPosContent.trace("w", lambda a, b, c: self.updateDistributed())
+
+            introLabel = Label(self.frame, font = "Helvetica", text = "Parâmetros de Carga Distribuída")
+            introLabel.grid(row = 0, column = 1, padx = 0, pady = (5, 0))
+            
+            angleLabel = Label(self.frame, font = "Helvetica", text = "Ângulo: ")
+            angleLabel.grid(row = 1, column = 0, padx = 3, pady = 20)
+
+            angleEntry = Entry(self.frame, textvariable = self.angleContent)
+            angleEntry.grid(row = 1, column = 1)
+
+            degreesLabel = Label(self.frame, font = "Helvetica", text = "º")
+            degreesLabel.grid(row = 1, column = 2, padx = 0)
+
+            typeLabel = Label(self.frame, font = "Helvetica", text = "Tipo de Carga")
+            typeLabel.grid(row = 2, column = 1)
+
+            uniform = Radiobutton(self.frame, text = "Uniforme", variable = self.radioContent, value = 0, command = lambda: self.updateDistributed())
+            uniform.grid(row = 3, column = 0)
+
+            linear = Radiobutton(self.frame, text = "Linear", variable = self.radioContent, value = 1, command = lambda: self.updateDistributed())
+            linear.grid(row = 3, column = 1)
+
+            ##quadratic = Radiobutton(self.frame, text = "Quadrática", variable = self.radioContent, value = 2, command = lambda: self.updateDistributed())
+            ##quadratic.grid(row = 3, column = 2)
+
+            posLabel = Label(self.frame, font = "Helvetica", text = "Posição da Carga")
+            posLabel.grid(row = 5, column = 1, pady = (20, 0))
+
+            startPosEntry = Entry(self.frame, textvariable = self.startPosContent, width = 4)
+            startPosEntry.grid(row = 6, column = 1)
+
+            endPosEntry = Entry(self.frame, textvariable = self.endPosContent, width = 4)
+            endPosEntry.grid(row = 6, column = 3)
+
+            startLabel = Label(self.frame, font = "Helvetica", text = "De")
+            startLabel.grid(row = 6, column = 0, pady = 20)
+
+            endLabel = Label(self.frame, font = "Helvetica", text = "Até")
+            endLabel.grid(row = 6, column = 2, padx = 0)
+
+            self.distributedParameters = list()
+            self.distributedEntries = list()
+            self.distributedLabels = list()
+
+            self.radioContent.set(0)
+            self.angleContent.set("90")
+            self.startPosContent.set("0")
+            self.endPosContent.set("5")
 
     def updateForce(self):
         force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
@@ -391,6 +464,122 @@ class SupportWidget:
         self.master_window.inserting = False
         self.master.destroy()
 
+    def updateDistributed(self):
+        force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+        radioOption = self.radioContent.get()
+        start_pos = float(self.startPosContent.get()) if len(self.startPosContent.get()) != 0 else 0
+        end_pos = float(self.endPosContent.get()) if len(self.endPosContent.get()) != 0 else 5
+
+        if self.lastRadio != radioOption:
+            self.distributedParameters.clear()
+
+            for entry in self.distributedEntries:
+                entry.grid_remove()
+            
+            for label in self.distributedLabels:
+                label.grid_remove()
+
+            self.distributedEntries.clear()
+            self.distributedLabels.clear()
+
+            if radioOption == 0:
+                uniformLoad = StringVar()
+                uniformLoad.set("1")
+                uniformLoad.trace("w", lambda a, b, c: self.updateDistributed())
+
+                self.distributedParameters.append(uniformLoad)
+
+                loadEntry = Entry(self.frame, textvariable = uniformLoad, width = 4)
+                loadEntry.grid(row = 4, column = 0)
+
+                entryLabel = Label(self.frame, font = "Helvetica", text = "kN/m")
+                entryLabel.grid(row = 4, column = 1)
+
+                self.distributedEntries.append(loadEntry)
+                self.distributedLabels.append(entryLabel)
+
+            elif radioOption == 1:
+                startLoad = StringVar()
+                startLoad.set("0")
+                startLoad.trace("w", lambda a, b, c: self.updateDistributed())
+
+                endLoad = StringVar()
+                endLoad.set("1")
+                endLoad.trace("w", lambda a, b, c: self.updateDistributed())
+
+                self.distributedParameters.append(startLoad)
+                self.distributedParameters.append(endLoad)
+
+                startLabel = Label(self.frame, font = "Helvetica", text = "De")
+                startLabel.grid(row = 4, column = 0)
+
+                startEntry = Entry(self.frame, textvariable = startLoad, width = 4)
+                startEntry.grid(row = 4, column = 1)
+
+                endLabel = Label(self.frame, font = "Helvetica", text = "até")
+                endLabel.grid(row = 4, column = 2)
+
+                endEntry = Entry(self.frame, textvariable = endLoad, width = 4)
+                endEntry.grid(row = 4, column = 3, padx = 0)
+
+                self.distributedEntries.append(startEntry)
+                self.distributedEntries.append(endEntry)
+
+                self.distributedLabels.append(startLabel)
+                self.distributedLabels.append(endLabel)
+
+        if radioOption == 0:
+            uniformLoad = int(self.distributedParameters[0].get()) if len(self.distributedParameters[0].get()) != 0 else 1
+
+            scale = 1 if 0 <= uniformLoad <= 10 else 0.1 if 10 < uniformLoad < 100 else 0.01 if 100 <= uniformLoad < 1000 else 0.001
+
+            i : int = 0
+
+            if len(self.master_window.forcePreview) != 0:
+                for force in self.master_window.forcePreview:
+                    self.master_window.drawing_area.delete(force)
+                self.master_window.forcePreview.clear()
+                self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+            tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
+            tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
+
+            for i in range(11):    
+                self.master_window.forcePreview.append(self.master_window.drawing_area.create_line(tipX - 20 * uniformLoad * scale * pcos(force_angle), tipY - 20 * uniformLoad * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 4.0, activefill = "blue", smooth = True))
+                tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
+                tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
+            
+            self.master_window.labelPreview = self.master_window.drawing_area.create_text((tipX + self.master_force.x) / 2, (tipY + self.master_force.y) // 2 - 80, font = "Helvetica", text = "1 kN/m")
+
+            self.lastRadio = 0
+
+        if radioOption == 1:
+            startLoad = int(self.distributedParameters[0].get()) if len(self.distributedParameters[0].get()) != 0 else 0
+            endLoad = int(self.distributedParameters[1].get()) if len(self.distributedParameters[1].get()) != 0 else 1
+
+            scale = 1
+
+            i : int = 0
+
+            if len(self.master_window.forcePreview) != 0:
+                for force in self.master_window.forcePreview:
+                    self.master_window.drawing_area.delete(force)
+                self.master_window.forcePreview.clear()
+                self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+            tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
+            tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
+            load : int = startLoad
+
+            for i in range(11):
+                self.master_window.forcePreview.append(self.master_window.drawing_area.create_line(tipX - 20 * load * scale * pcos(force_angle), tipY - 20 * load * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 2.0, activefill = "blue", smooth = True))
+                tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
+                tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
+                load = load + (endLoad - startLoad) / 10
+            
+            self.master_window.labelPreview = self.master_window.drawing_area.create_text((tipX + self.master_force.x) / 2, (tipY + self.master_force.y) // 2 - 80, font = "Helvetica", text = "1 kN/m")
+
+            self.lastRadio = 1
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
