@@ -10,7 +10,7 @@ from auxiliary.algebra import psin, pcos, ptan, Vector3, Polynomial
 from functools import partial
 from beam import Beam
 from PIL import ImageTk, Image
-from force import Concentrated, Distributed
+from force import Concentrated, Distributed, Moment
 
 class InsertionMode(IntEnum):
     BEAM = 0
@@ -221,7 +221,7 @@ class MainWidget:
                 beam = self.system.beams[owner - 1]
 
                 support = Toplevel(self.drawing_area)
-                self.supportWindow = SupportWidget(support, self, "Parâmetros: Momento", self.currentMousePosition.x + 350, self.currentMousePosition.y , InsertionMode.MOMENT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Momento", self.currentMousePosition.x + 350, self.currentMousePosition.y , InsertionMode.MOMENT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner, beamEnd = Point(beam[3].x, beam[3].y))
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -323,9 +323,14 @@ class MainWidget:
                 if lastAction.related[3]:
                     self.drawing_area.delete(lastAction.related[4])
 
+            elif lastAction.type == ActionType.ADD_MOMENT:
+                self.system.beams[lastAction.related[2] - 1][0].momentList.pop()
+                self.drawing_area.delete(lastAction.related[0])
+                self.drawing_area.delete(lastAction.related[1])
+
 class SupportWidget:
 
-    def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float], beamID: Optional[int]):
+    def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float], beamID: Optional[int], beamEnd = None):
         self.master = master
         self.master.geometry(f"450x350+{x}+{y}")
         self.master.title(name)
@@ -339,6 +344,7 @@ class SupportWidget:
         self.beamAngle = beamAngle
         self.beamID = beamID
         self.master_force = force
+        self.beamEnd = beamEnd
 
         if mode == InsertionMode.FORCE:
             self.angleContent = StringVar()
@@ -447,6 +453,34 @@ class SupportWidget:
             self.angleContent.set("90")
             self.startPosContent.set("0")
             self.endPosContent.set("5")
+
+        elif mode == InsertionMode.MOMENT:
+            self.positionContent = StringVar()
+            self.positionContent.trace("w", lambda a, b, c: self.updateMoment())
+
+            self.magnitudeContent = StringVar()
+            self.magnitudeContent.trace("w", lambda a, b, c: self.updateMoment())
+
+            introLabel = Label(self.frame, font = "Helvetica", text = "Parâmetros de Momento")
+            introLabel.grid(row = 0, column = 1, padx = 0, pady = (5, 0))
+
+            guideLabel = Label(self.frame, font = "Helvetica", text = "Positivo = Anti-Horário")
+            guideLabel.grid(row = 2, column = 1, padx = 0, pady = (5, 0))
+
+            magnitudeLabel = Label(self.frame, font = "Helvetica", text = "Módulo: ")
+            magnitudeLabel.grid(row = 1, column = 0, padx = 3, pady = 20)
+
+            magnitudeEntry = Entry(self.frame, textvariable = self.magnitudeContent)
+            magnitudeEntry.grid(row = 1, column = 1)
+
+            kNmLabel = Label(self.frame, font = "Helvetica", text = "kNm")
+            kNmLabel.grid(row = 1, column = 2, padx = 0)
+
+            insertButton = Button(self.frame, text = "Inserir Momento", font = "Helvetica", command = lambda: self.insertMoment())
+            insertButton.grid(row = 3, column = 1)
+            
+            self.positionContent.set("0")
+            self.magnitudeContent.set("1")
 
     def updateForce(self):
         force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
@@ -699,6 +733,36 @@ class SupportWidget:
         self.master_window.forcePreview.clear()
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
 
+        self.master_window.inserting = False
+        self.master.destroy()
+
+    def updateMoment(self):
+        magnitude = float(self.magnitudeContent.get()) if len(self.magnitudeContent.get()) != 0 else 1
+
+        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40
+        tipY : float = ((self.master_force.y + self.beamEnd.y) // 2) 
+
+        self.master_window.drawing_area.delete(self.master_window.forcePreview)
+        self.momentAsset = PhotoImage(file = "arrow1.png") if magnitude > 0 else PhotoImage(file = "arrow2.png")
+        self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.momentAsset)
+        self.master_window.drawing_area.delete(self.master_window.labelPreview)
+        self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = self.beamAngle)
+
+    def insertMoment(self):
+        magnitude = float(self.magnitudeContent.get()) if len(self.magnitudeContent.get()) != 0 else 1
+
+        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40
+        tipY : float = ((self.master_force.y + self.beamEnd.y) // 2)
+
+        self.master_window.system.beams[self.beamID - 1][0].momentList.append(Moment(magnitude))
+        self.master_window.drawing_area.delete(self.master_window.forcePreview)
+        self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+        momentAsset = PhotoImage(file = "arrow1.png") if magnitude > 0 else PhotoImage(file = "arrow2.png")
+        moment = self.master_window.drawing_area.create_image(tipX, tipY, image = momentAsset)
+        label = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = self.beamAngle)
+
+        self.master_window.actions.append(Action(related = (moment, label, self.beamID, momentAsset), type = ActionType.ADD_MOMENT))
         self.master_window.inserting = False
         self.master.destroy()
 
