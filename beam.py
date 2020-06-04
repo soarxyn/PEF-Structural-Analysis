@@ -6,8 +6,8 @@ from support import Support
 
 class Beam:
 	length: float = None
-	start: Tuple[Support, List[Beam]] = tuple(None, list())	# beam can be attached to other
-	end: Tuple[Support, List[Beam]] = tuple(None, list())		# beams or to a support
+	start: Tuple[Support, List[Beam]] = (None, list())	# beam can be attached to other
+	end: Tuple[Support, List[Beam]] = (None, list())		# beams or to a support
 
 	concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
 	distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order

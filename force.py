@@ -28,7 +28,7 @@ class Distributed:
 		p1.coefficients.insert(0, 0)
 		p1.degree = self.distribution.degree + 1
 		integral: float = integrate(self.distribution, 0, self.length)
-		return tuple(
+		return (
 			Concentrated(integral),
 			integrate(p1, 0, self.length)/integral
 		)
@@ -40,7 +40,7 @@ class Distributed:
 			basePolynomial.degree = 1
 		else:
 			basePolynomial.coefficients[1] -= pcot(angle)
-		return tuple(
+		return (
 			Distributed(self.length/psin(angle), psin(angle)*basePolynomial),
 			Distributed(self.length/psin(angle), -pcos(angle)*basePolynomial)
 		)
