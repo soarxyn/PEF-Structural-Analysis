@@ -33,7 +33,7 @@ class System:
         b.z -= force.y*pos.x - force.x*pos.y
 
       for distributed in beam[0].distributedList:
-        equivalent: Tuple[Concentrated, float] = distributed[0].equivalent()
+        equivalent: Tuple[Concentrated, float] = distributed[0].equivalent(0, distributed[0].length)
         force: Vector3 = equivalent[0].forceVector(beam[2] + distributed[2])
         pos: Vector3 = beam[0].pointPos(beam[1], distributed[1] + equivalent[1], beam[2])
         b.x -= force.x
