@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from system import System
 from collections import deque, namedtuple
 from math import dist, degrees, atan2, copysign
-from auxiliary.algebra import psin, pcos, ptan, Vector3
+from auxiliary.algebra import psin, pcos, ptan, Vector3, Polynomial
 from functools import partial
 from beam import Beam
 from PIL import ImageTk, Image
@@ -62,6 +62,7 @@ class MainWidget:
         self.arcPreview = None
         self.anglePreview = None
         self.forcePreview = None
+        self.startLabelPreview = None
 
         self.insertionText = None
         self.arrowIndicator = None
@@ -297,10 +298,21 @@ class MainWidget:
                     if not beam[3] in self.snapPoints:
                         self.snapPoints.append(Point(beam[3].x, beam[3].y))
             
-            if lastAction.type == ActionType.ADD_CONCENTRATED:
+            elif lastAction.type == ActionType.ADD_CONCENTRATED:
                 self.system.beams[lastAction.related[2] - 1][0].concentratedList.pop()
                 self.drawing_area.delete(lastAction.related[0])
                 self.drawing_area.delete(lastAction.related[1])
+
+            elif lastAction.type == ActionType.ADD_DISTRIBUTED:
+                self.system.beams[lastAction.related[2] - 1][0].distributedList.pop()
+
+                for force in lastAction.related[0]:
+                    self.drawing_area.delete(force)
+                
+                self.drawing_area.delete(lastAction.related[1])
+
+                if lastAction.related[3]:
+                    self.drawing_area.delete(lastAction.related[4])
 
 class SupportWidget:
 
@@ -400,9 +412,6 @@ class SupportWidget:
             linear = Radiobutton(self.frame, text = "Linear", variable = self.radioContent, value = 1, command = lambda: self.updateDistributed())
             linear.grid(row = 3, column = 1)
 
-            ##quadratic = Radiobutton(self.frame, text = "Quadrática", variable = self.radioContent, value = 2, command = lambda: self.updateDistributed())
-            ##quadratic.grid(row = 3, column = 2)
-
             posLabel = Label(self.frame, font = "Helvetica", text = "Posição da Carga")
             posLabel.grid(row = 5, column = 1, pady = (20, 0))
 
@@ -417,6 +426,9 @@ class SupportWidget:
 
             endLabel = Label(self.frame, font = "Helvetica", text = "Até")
             endLabel.grid(row = 6, column = 2, padx = 0)
+
+            insertButton = Button(self.frame, text = "Inserir Carga", font = "Helvetica", command = lambda: self.insertDistributed())
+            insertButton.grid(row = 7, column = 1)
 
             self.distributedParameters = list()
             self.distributedEntries = list()
@@ -544,14 +556,91 @@ class SupportWidget:
             tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
             tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
 
+            tipX0 : float = tipX
+            tipY0 : float = tipY
+
             for i in range(11):    
                 self.master_window.forcePreview.append(self.master_window.drawing_area.create_line(tipX - 20 * uniformLoad * scale * pcos(force_angle), tipY - 20 * uniformLoad * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 4.0, activefill = "blue", smooth = True))
                 tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
                 tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
             
-            self.master_window.labelPreview = self.master_window.drawing_area.create_text((tipX + self.master_force.x) / 2, (tipY + self.master_force.y) // 2 - 80, font = "Helvetica", text = "1 kN/m")
+            self.master_window.labelPreview = self.master_window.drawing_area.create_text((tipX + tipX0) / 2 - 40 * pcos(force_angle) if force_angle <= 180 else (tipX + tipX0) / 2, (tipY + tipY0) // 2 - 30 * (uniformLoad), font = "Helvetica", text = f"{uniformLoad} kN/m")
 
             self.lastRadio = 0
+
+        if radioOption == 1:
+            startLoad = int(self.distributedParameters[0].get()) if len(self.distributedParameters[0].get()) != 0 else 0
+            endLoad = int(self.distributedParameters[1].get()) if len(self.distributedParameters[1].get()) != 0 else 1
+
+            scale = 1
+
+            i : int = 0
+
+            if self.master_window.startLabelPreview != None and self.master_window.startLabelPreview != 0:
+                self.master_window.drawing_area.delete(self.master_window.startLabelPreview)
+
+            if len(self.master_window.forcePreview) != 0:
+                for force in self.master_window.forcePreview:
+                    self.master_window.drawing_area.delete(force)
+                self.master_window.forcePreview.clear()
+                self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+            tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
+            tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
+            load : int = startLoad
+
+            tipX0 : float = tipX
+            tipY0 : float = tipY
+
+            for i in range(11):
+                self.master_window.forcePreview.append(self.master_window.drawing_area.create_line(tipX - 20 * load * scale * pcos(force_angle), tipY - 20 * load * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 2.0, activefill = "blue", smooth = True))
+                tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
+                tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
+                load = load + (endLoad - startLoad) / 10
+            
+            if startLoad != 0:
+                self.master_window.startLabelPreview = self.master_window.drawing_area.create_text(tipX0, tipY0 - 5 - 25 * startLoad, font = "Helvetica", text = f"{startLoad} kN/m")
+
+            self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX, tipY - 5 - 25 * endLoad, font = "Helvetica", text = f"{endLoad} kN/m")
+
+            self.lastRadio = 1
+
+    def insertDistributed(self):
+        force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+        radioOption = self.radioContent.get()
+        start_pos = float(self.startPosContent.get()) if len(self.startPosContent.get()) != 0 else 0
+        end_pos = float(self.endPosContent.get()) if len(self.endPosContent.get()) != 0 else 5
+
+        if radioOption == 0:
+            uniformLoad = int(self.distributedParameters[0].get()) if len(self.distributedParameters[0].get()) != 0 else 1
+
+            scale = 1 if 0 <= uniformLoad <= 10 else 0.1 if 10 < uniformLoad < 100 else 0.01 if 100 <= uniformLoad < 1000 else 0.001
+
+            i : int = 0
+
+            if len(self.master_window.forcePreview) != 0:
+                for force in self.master_window.forcePreview:
+                    self.master_window.drawing_area.delete(force)
+                self.master_window.forcePreview.clear()
+                self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+            tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
+            tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
+
+            tipX0 : float = tipX
+            tipY0 : float = tipY
+            
+            forces = list()
+
+            for i in range(11):    
+                forces.append(self.master_window.drawing_area.create_line(tipX - 20 * uniformLoad * scale * pcos(force_angle), tipY - 20 * uniformLoad * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 4.0, activefill = "blue", smooth = True))
+                tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
+                tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
+            
+            label = self.master_window.drawing_area.create_text((tipX + tipX0) / 2 - 40 * pcos(force_angle) if force_angle <= 180 else (tipX + tipX0) / 2, (tipY + tipY0) // 2 - 30 * (uniformLoad), font = "Helvetica", text = f"{uniformLoad} kN/m")
+
+            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([uniformLoad])), start_pos, force_angle))
+            self.master_window.actions.append(Action(related = (forces, label, self.beamID, False, 0), type = ActionType.ADD_DISTRIBUTED))
 
         if radioOption == 1:
             startLoad = int(self.distributedParameters[0].get()) if len(self.distributedParameters[0].get()) != 0 else 0
@@ -567,19 +656,42 @@ class SupportWidget:
                 self.master_window.forcePreview.clear()
                 self.master_window.drawing_area.delete(self.master_window.labelPreview)
 
+            if self.master_window.startLabelPreview != None and self.master_window.startLabelPreview != 0:
+                self.master_window.drawing_area.delete(self.master_window.startLabelPreview)
+
             tipX : float = self.master_force.x + (start_pos * pcos(self.beamAngle) * 10)
             tipY : float = self.master_force.y - (start_pos * psin(self.beamAngle) * 10)
             load : int = startLoad
 
+            tipX0 : float = tipX
+            tipY0 : float = tipY
+
+            forces = list()
+
             for i in range(11):
-                self.master_window.forcePreview.append(self.master_window.drawing_area.create_line(tipX - 20 * load * scale * pcos(force_angle), tipY - 20 * load * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 2.0, activefill = "blue", smooth = True))
+                forces.append(self.master_window.drawing_area.create_line(tipX - 20 * load * scale * pcos(force_angle), tipY - 20 * load * scale * psin(force_angle), tipX, tipY, arrow = LAST, width = 2.0, activefill = "blue", smooth = True))
                 tipX = tipX + (end_pos - start_pos) * pcos(self.beamAngle)
                 tipY = tipY - (end_pos - start_pos) * psin(self.beamAngle)
                 load = load + (endLoad - startLoad) / 10
             
-            self.master_window.labelPreview = self.master_window.drawing_area.create_text((tipX + self.master_force.x) / 2, (tipY + self.master_force.y) // 2 - 80, font = "Helvetica", text = "1 kN/m")
+            startLabel = 0
 
-            self.lastRadio = 1
+            if startLoad != 0:
+                startLabel = self.master_window.drawing_area.create_text(tipX0, tipY0 - 5 - 25 * startLoad, font = "Helvetica", text = f"{startLoad} kN/m")
+
+            label = self.master_window.drawing_area.create_text(tipX, tipY - 5 - 25 * endLoad, font = "Helvetica", text = f"{endLoad} kN/m")
+
+            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([startLoad, (endLoad - startLoad) / (end_pos - start_pos)])), start_pos, force_angle))
+            self.master_window.actions.append(Action(related = (forces, label, self.beamID, startLoad != 0, startLabel), type = ActionType.ADD_DISTRIBUTED))
+
+        for force in self.master_window.forcePreview:
+            self.master_window.drawing_area.delete(force)
+
+        self.master_window.forcePreview.clear()
+        self.master_window.drawing_area.delete(self.master_window.labelPreview)
+
+        self.master_window.inserting = False
+        self.master.destroy()
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
