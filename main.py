@@ -739,28 +739,30 @@ class SupportWidget:
     def updateMoment(self):
         magnitude = float(self.magnitudeContent.get()) if len(self.magnitudeContent.get()) != 0 else 1
 
-        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40
+        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40 * pcos(self.beamAngle)
         tipY : float = ((self.master_force.y + self.beamEnd.y) // 2) 
 
+        textAngle = self.beamAngle if 0 <= self.beamAngle < 90 else self.beamAngle - 180 if self.beamAngle > 90 else 360 + self.beamAngle if - 90 < self.beamAngle < 0 else self.beamAngle + 180
         self.master_window.drawing_area.delete(self.master_window.forcePreview)
-        self.momentAsset = PhotoImage(file = "arrow1.png") if magnitude > 0 else PhotoImage(file = "arrow2.png")
+        self.momentAsset = ImageTk.PhotoImage(Image.open("arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("arrow2.png").rotate(self.beamAngle))
         self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.momentAsset)
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
-        self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = self.beamAngle)
+        self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = textAngle)
 
     def insertMoment(self):
         magnitude = float(self.magnitudeContent.get()) if len(self.magnitudeContent.get()) != 0 else 1
 
-        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40
+        tipX : float = ((self.master_force.x + self.beamEnd.x) // 2) - 40 * pcos(self.beamAngle)
         tipY : float = ((self.master_force.y + self.beamEnd.y) // 2)
 
-        self.master_window.system.beams[self.beamID - 1][0].momentList.append(Moment(magnitude))
+        self.master_window.system.beams[self.beamID - 1][0].moment = Moment(magnitude)
         self.master_window.drawing_area.delete(self.master_window.forcePreview)
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
 
-        momentAsset = PhotoImage(file = "arrow1.png") if magnitude > 0 else PhotoImage(file = "arrow2.png")
+        textAngle = self.beamAngle if 0 <= self.beamAngle < 90 else self.beamAngle - 180 if self.beamAngle > 90 else 360 + self.beamAngle if - 90 < self.beamAngle < 0 else self.beamAngle + 180
+        momentAsset = ImageTk.PhotoImage(Image.open("arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("arrow2.png").rotate(self.beamAngle))
         moment = self.master_window.drawing_area.create_image(tipX, tipY, image = momentAsset)
-        label = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = self.beamAngle)
+        label = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = textAngle)
 
         self.master_window.actions.append(Action(related = (moment, label, self.beamID, momentAsset), type = ActionType.ADD_MOMENT))
         self.master_window.inserting = False
