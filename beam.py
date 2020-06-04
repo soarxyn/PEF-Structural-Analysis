@@ -18,6 +18,6 @@ class Beam:
 
 	def pointPos(self, startPos: Vector3, point: float, angle: float) -> Vector3:
 		if point > self.length or point < 0:
-			raise Exception('Point is outside the beam')
+			raise Exception('Point is outside the beam!')
 
 		return startPos + Vector3(point*pcos(angle), point*psin(angle), 0)
