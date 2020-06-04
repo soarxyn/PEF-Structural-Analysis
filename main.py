@@ -11,6 +11,7 @@ from functools import partial
 from beam import Beam
 from PIL import ImageTk, Image
 from force import Concentrated, Distributed, Moment
+from support import Support, SupportType
 
 class InsertionMode(IntEnum):
     BEAM = 0
@@ -221,7 +222,17 @@ class MainWidget:
                 beam = self.system.beams[owner - 1]
 
                 support = Toplevel(self.drawing_area)
-                self.supportWindow = SupportWidget(support, self, "Parâmetros: Momento", self.currentMousePosition.x + 350, self.currentMousePosition.y , InsertionMode.MOMENT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner, beamEnd = Point(beam[3].x, beam[3].y))
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Momento", self.currentMousePosition.x + 350, self.currentMousePosition.y, InsertionMode.MOMENT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner, beamEnd = Point(beam[3].x, beam[3].y))
+
+        elif self.insertionMode == InsertionMode.SUPPORT:
+            owner : int = self.ownedDomain[self.currentMousePosition.x][self.currentMousePosition.y]
+
+            if owner != 0:
+                self.inserting = True
+                beam = self.system.beams[owner - 1]
+
+                support = Toplevel(self.drawing_area)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Reforço", self.currentMousePosition.x + 350, self.currentMousePosition.y, InsertionMode.SUPPORT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner, beamEnd = Point(beam[3].x, beam[3].y))
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -481,6 +492,56 @@ class SupportWidget:
             
             self.positionContent.set("0")
             self.magnitudeContent.set("1")
+    
+        elif mode == InsertionMode.SUPPORT:
+            self.typeContent = IntVar()
+            self.lastType = None
+
+            self.positionContent = IntVar()
+            self.lastPosition = None
+
+            self.angleContent = StringVar()
+            self.angleContent.trace("w", lambda a, b, c: self.updateSupport())
+
+            introLabel = Label(self.frame, font = "Helvetica", text = "Parâmetros de Reforço")
+            introLabel.grid(row = 0, column = 1, padx = 0, pady = (5, 0))
+
+            posLabel = Label(self.frame, font = "Helvetica", text = "Posição do Reforço")
+            posLabel.grid(row = 1, column = 1, pady = (20, 0))
+
+            start = Radiobutton(self.frame, text = "Início", variable = self.positionContent, value = 0, command = lambda: self.updateSupport())
+            start.grid(row = 2, column = 0)
+
+            end = Radiobutton(self.frame, text = "Final", variable = self.positionContent, value = 1, command = lambda: self.updateSupport())
+            end.grid(row = 2, column = 1)
+
+            typeLabel = Label(self.frame, font = "Helvetica", text = "Tipo de Reforço")
+            typeLabel.grid(row = 3, column = 1, pady = (20, 0))
+
+            simple = Radiobutton(self.frame, text = "Simples", variable = self.typeContent, value = 0, command = lambda: self.updateSupport())
+            simple.grid(row = 4, column = 0)
+
+            pinned = Radiobutton(self.frame, text = "Duplo", variable = self.typeContent, value = 1, command = lambda: self.updateSupport())
+            pinned.grid(row = 4, column = 1)
+
+            fixed = Radiobutton(self.frame, text = "Engastamento", variable = self.typeContent, value = 2, command = lambda: self.updateSupport())
+            fixed.grid(row = 4, column = 2)
+
+            self.angleLabel = Label(self.frame, font = "Helvetica", text = "Ângulo: ")
+            self.angleLabel.grid(row = 5, column = 0, padx = 3, pady = 20)
+
+            self.angleEntry = Entry(self.frame, textvariable = self.angleContent)
+            self.angleEntry.grid(row = 5, column = 1)
+
+            self.degreesLabel = Label(self.frame, font = "Helvetica", text = "º")
+            self.degreesLabel.grid(row = 5, column = 2, padx = 0)
+
+            insertButton = Button(self.frame, text = "Inserir Reforço", font = "Helvetica", command = lambda: self.insertSupport())
+            insertButton.grid(row = 6, column = 1, pady = 20)
+            
+            self.typeContent.set(0)
+            self.positionContent.set(0)
+            self.angleContent.set("90")
 
     def updateForce(self):
         force_angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
@@ -765,6 +826,81 @@ class SupportWidget:
         label = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = textAngle)
 
         self.master_window.actions.append(Action(related = (moment, label, self.beamID, momentAsset), type = ActionType.ADD_MOMENT))
+        self.master_window.inserting = False
+        self.master.destroy()
+
+    def updateSupport(self):
+        position = self.positionContent.get()
+        selectedType = self.typeContent.get()
+
+        if self.lastType != selectedType:
+            if selectedType == 0:
+                self.angleLabel.grid(row = 5, column = 0, padx = 3, pady = 20)
+                self.angleEntry.grid(row = 5, column = 1)
+                self.degreesLabel.grid(row = 5, column = 2, padx = 0)
+            else:
+                self.angleLabel.grid_remove()
+                self.angleEntry.grid_remove()
+                self.degreesLabel.grid_remove()
+
+        if selectedType == 0:
+            angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+
+            tipX : float = self.master_force.x if position == 0 else self.beamEnd.x
+            tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
+
+            self.master_window.drawing_area.delete(self.master_window.forcePreview)
+            self.supportAsset = ImageTk.PhotoImage(Image.open("assets/simple.png").rotate(angle))
+            self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.supportAsset)
+        
+        elif selectedType == 1:
+            tipX : float = self.master_force.x if position == 0 else self.beamEnd.x
+            tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
+
+            self.master_window.drawing_area.delete(self.master_window.forcePreview)
+            self.supportAsset = PhotoImage(file = "assets/pinned.png")
+            self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.supportAsset)
+        
+        elif selectedType == 2:
+            tipX : float = self.master_force.x if position == 0 else self.beamEnd.x
+            tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
+
+            self.master_window.drawing_area.delete(self.master_window.forcePreview)
+            self.supportAsset = PhotoImage(file = "assets/fixed.png")
+            self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.supportAsset)
+        
+    def insertSupport(self):
+        position = self.positionContent.get()
+        selectedType = self.typeContent.get()
+
+        supportAsset = None
+        supportInstance = None
+
+        tipX : float = self.master_force.x if position == 0 else self.beamEnd.x
+        tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
+
+        if selectedType == 0:
+            angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+            supportInstance = Support("SIMPLE", angle)
+            supportAsset = ImageTk.PhotoImage(Image.open("assets/simple.png").rotate(angle))
+        
+        elif selectedType == 1:
+            supportInstance = Support("PINNED")
+            supportAsset = PhotoImage(file = "assets/pinned.png")
+        
+        elif selectedType == 2:
+            supportInstance = Support("FIXED")
+            supportAsset = supportAsset = PhotoImage(file = "assets/fixed.png")
+
+        if position == 0:
+            self.master_window.system.beams[self.beamID - 1][0].start = (supportInstance, self.master_window.system.beams[self.beamID - 1][0].start[1])
+        else:
+            self.master_window.system.beams[self.beamID - 1][0].end = (supportInstance, self.master_window.system.beams[self.beamID - 1][0].end[1])
+
+        self.master_window.drawing_area.delete(self.master_window.forcePreview)
+        support = self.master_window.drawing_area.create_image(tipX, tipY, image = supportAsset)
+
+        self.master_window.actions.append(Action(related = (support, supportAsset), type = ActionType.ADD_SUPPORT))
         self.master_window.inserting = False
         self.master.destroy()
 

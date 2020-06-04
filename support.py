@@ -10,7 +10,7 @@ class SupportType(Enum):
 class Support:
   reaction: Vector3 = Vector3(0, 0, 0)
 
-  def __init__(self, name: str, angle: float):
+  def __init__(self, name: str, angle: float = 0):
     if SupportType[name].value[0] > 1:
       self.reaction.x = 1
       self.reaction.y = 1
