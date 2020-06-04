@@ -213,6 +213,15 @@ class MainWidget:
                 support = Toplevel(self.drawing_area)
                 self.supportWindow = SupportWidget(support, self, "Parâmetros: Carga Distribuída", self.currentMousePosition.x + 350, self.currentMousePosition.y, InsertionMode.DISTRIBUTED, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
 
+        elif self.insertionMode == InsertionMode.MOMENT:
+            owner : int = self.ownedDomain[self.currentMousePosition.x][self.currentMousePosition.y]
+
+            if owner != 0:
+                self.inserting = True
+                beam = self.system.beams[owner - 1]
+
+                support = Toplevel(self.drawing_area)
+                self.supportWindow = SupportWidget(support, self, "Parâmetros: Momento", self.currentMousePosition.x + 350, self.currentMousePosition.y , InsertionMode.MOMENT, force = Point(beam[1].x, beam[1].y), beamAngle = beam[2], beamID = owner)
 
     def mouseMotion(self, event = None):
         self.currentMousePosition = Point(trunc(event.x), trunc(event.y))
@@ -318,7 +327,7 @@ class SupportWidget:
 
     def __init__(self, master, master_window, name: str, x: int, y: int, mode: InsertionMode, force: Optional[Point], beamAngle: Optional[float], beamID: Optional[int]):
         self.master = master
-        self.master.geometry(f"450x300+{x}+{y}")
+        self.master.geometry(f"450x350+{x}+{y}")
         self.master.title(name)
         
         self.frame = Frame(self.master)
@@ -698,6 +707,7 @@ if __name__ == "__main__":
     root.set_theme("breeze")
     root.title("PEF3208 - Análise de Estruturas 2D")
     root.geometry("1360x768")
+    root.iconphoto(True, PhotoImage(file = "pikachu.png"))
 
     mainWidget : MainWidget = MainWidget(root)
     root.mainloop()
