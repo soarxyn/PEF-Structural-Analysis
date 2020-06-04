@@ -10,7 +10,7 @@ class Concentrated:
 
 	def forceVector(self, angle: float) -> Vector3:
 		return Vector3(
-			-self.magnitude*pcos(angle),
+			self.magnitude*pcos(angle),
 			-self.magnitude*psin(angle),
 			0
 		)
@@ -33,16 +33,16 @@ class Distributed:
 			integrate(p1, 0, self.length)/integral
 		)
 
-	def angledComponents(self, angle: float) -> Tuple[Distributed, Distributed]:	# the first load is applied perpendicularly to the referential axis, while the second one is applied in parallel
+	def angledComponents(self, angle: float) -> Tuple[Distributed, Distributed]:	# the first load is applied in parallel to the referential axis, while the second one is applied perpendicularly
 		basePolynomial: Polynomial = Polynomial(self.distribution.coefficients)
 		if self.distribution.degree < 1:
-			basePolynomial.coefficients.append(-pcot(angle))
+			basePolynomial.coefficients.append(pcot(angle))
 			basePolynomial.degree = 1
 		else:
-			basePolynomial.coefficients[1] -= pcot(angle)
+			basePolynomial.coefficients[1] += pcot(angle)
 		return (
-			Distributed(self.length/psin(angle), psin(angle)*basePolynomial),
-			Distributed(self.length/psin(angle), -pcos(angle)*basePolynomial)
+			Distributed(self.length/psin(angle), pcos(angle)*basePolynomial),
+			Distributed(self.length/psin(angle), psin(angle)*basePolynomial)
 		)
 
 class Moment:
