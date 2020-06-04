@@ -335,9 +335,17 @@ class MainWidget:
                     self.drawing_area.delete(lastAction.related[4])
 
             elif lastAction.type == ActionType.ADD_MOMENT:
-                self.system.beams[lastAction.related[2] - 1][0].momentList.pop()
+                self.system.beams[lastAction.related[2] - 1][0].moment = None
                 self.drawing_area.delete(lastAction.related[0])
                 self.drawing_area.delete(lastAction.related[1])
+
+            elif lastAction.type == ActionType.ADD_SUPPORT:
+                if lastAction.related[3] == 0:
+                    self.system.beams[lastAction.related[2] - 1][0].start = (None, self.system.beams[lastAction.related[2] - 1][0].start[1])
+                else:
+                    self.system.beams[lastAction.related[2] - 1][0].end = (None, self.system.beams[lastAction.related[2] - 1][0].end[1])
+
+                self.drawing_area.delete(lastAction.related[0])
 
 class SupportWidget:
 
@@ -900,7 +908,7 @@ class SupportWidget:
         self.master_window.drawing_area.delete(self.master_window.forcePreview)
         support = self.master_window.drawing_area.create_image(tipX, tipY, image = supportAsset)
 
-        self.master_window.actions.append(Action(related = (support, supportAsset), type = ActionType.ADD_SUPPORT))
+        self.master_window.actions.append(Action(related = (support, supportAsset, self.beamID, position), type = ActionType.ADD_SUPPORT))
         self.master_window.inserting = False
         self.master.destroy()
 
