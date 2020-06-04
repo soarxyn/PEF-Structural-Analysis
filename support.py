@@ -3,9 +3,9 @@ from enum import Enum
 from auxiliary.algebra import Vector3
 
 class SupportType(Enum):
-  SIMPLE: Tuple = (1, 0)
-  PINNED: Tuple = (2, 0)
-  FIXED: Tuple = (2, 1)
+  SIMPLE: Tuple = tuple(1, 0)   # tuple values are the number
+  PINNED: Tuple = tuple(2, 0)   # of forces and the number
+  FIXED: Tuple = tuple(2, 1)    # of moments, in that order
 
 class Support:
   reaction: Vector3 = Vector3(None, None, None)
