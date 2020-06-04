@@ -744,7 +744,7 @@ class SupportWidget:
 
         textAngle = self.beamAngle if 0 <= self.beamAngle < 90 else self.beamAngle - 180 if self.beamAngle > 90 else 360 + self.beamAngle if - 90 < self.beamAngle < 0 else self.beamAngle + 180
         self.master_window.drawing_area.delete(self.master_window.forcePreview)
-        self.momentAsset = ImageTk.PhotoImage(Image.open("arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("arrow2.png").rotate(self.beamAngle))
+        self.momentAsset = ImageTk.PhotoImage(Image.open("assets/arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("assets/arrow2.png").rotate(self.beamAngle))
         self.master_window.forcePreview = self.master_window.drawing_area.create_image(tipX, tipY, image = self.momentAsset)
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
         self.master_window.labelPreview = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = textAngle)
@@ -760,7 +760,7 @@ class SupportWidget:
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
 
         textAngle = self.beamAngle if 0 <= self.beamAngle < 90 else self.beamAngle - 180 if self.beamAngle > 90 else 360 + self.beamAngle if - 90 < self.beamAngle < 0 else self.beamAngle + 180
-        momentAsset = ImageTk.PhotoImage(Image.open("arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("arrow2.png").rotate(self.beamAngle))
+        momentAsset = ImageTk.PhotoImage(Image.open("assets/arrow1.png").rotate(self.beamAngle)) if magnitude > 0 else ImageTk.PhotoImage(Image.open("assets/arrow2.png").rotate(self.beamAngle))
         moment = self.master_window.drawing_area.create_image(tipX, tipY, image = momentAsset)
         label = self.master_window.drawing_area.create_text(tipX + 40, tipY - 40, font = "Helvetica", text = f"{magnitude} kNm", angle = textAngle)
 
@@ -773,7 +773,7 @@ if __name__ == "__main__":
     root.set_theme("breeze")
     root.title("PEF3208 - Análise de Estruturas 2D")
     root.geometry("1360x768")
-    root.iconphoto(True, PhotoImage(file = "pikachu.png"))
+    root.iconphoto(True, PhotoImage(file = "assets/pikachu.png"))
 
     mainWidget : MainWidget = MainWidget(root)
     root.mainloop()
