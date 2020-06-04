@@ -12,31 +12,17 @@ class System:
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     b: Vector3 = Vector3(0, 0, 0)
 
-    h: List[Tuple[Vector3, Vector3]] = list() # the first vector is the reaction force from the support and the second
-    v: List[Tuple[Vector3, Vector3]] = list() # one is its position with respect to the center of the coordinate system
-    m: List[Vector3] = list() # the vector is the reaction force from the support
+    supports: List[Tuple[Vector3, Vector3]] = list() # the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
 
     result: Vector3 = None
     r: List[float] = list()
 
     for beam in self.beams:
       if isinstance(beam[0].start, Support):
-        reaction: Vector3 = beam[0].start.reaction
-        pos: Vector3 = beam[1]
-        v.append(tuple(reaction, pos))
-        if reaction.x != None:
-          h.append(tuple(reaction, pos))
-        if reaction.z != None:
-          m.append(tuple(reaction, pos))
+        supports.append((beam[0].start.reaction, beam[1]))
 
       if isinstance(beam[0].end, Support):
-        reaction: Vector3 = beam[0].end.reaction
-        pos: Vector3 = beam[0].pointPos(beam[1], beam[0].length, beam[2])
-        v.append(tuple(reaction, pos))
-        if reaction.x != None:
-          h.append(tuple(reaction, pos))
-        if reaction.z != None:
-          m.append(tuple(reaction, pos))
+        supports.append((beam[0].end.reaction, beam[3]))
 
 
       for concentrated in beam[0].concentratedList:
@@ -57,31 +43,40 @@ class System:
       b.z -= beam[0].moment.magnitude
 
 
-      if len(h) + len(v) + len(m) == 3:
-        for i in range(len(h)):
-          coefs[0][i] = 1
-          coefs[2][i] = -h[i][1].y
+      i: float = 0
+      for s in supports:
+        if s[0].x != 0:
+          coefs[0][i] = s[0].x
+          coefs[2][i] = -s[1].y
+          i += 1
 
-        for i in range(len(v)):
-          coefs[1][len(h) + i] = 1
-          coefs[2][len(h) + i] = v[i][1].x
+        if s[0].y != 0:
+          coefs[1][i] = s[0].y
+          coefs[2][i] = s[1].x
+          i += 1
 
-        for i in range(len(m)):
-          coefs[2][len(h) + len(v) + i] = 1
+        if s[0].z != 0:
+          coefs[2][i] = s[0].z
 
 
+      if i == 3:
         result = solve(coefs, b)
         r = [result.x, result.y, result.z]
 
+        i = 0
+        for s in supports:
+          if s[0].x != 0:
+            s[0].x = r[i]
+            i += 1
 
-        for i in range(len(h)):
-          h[i][0].x = r[i]
+          if s[0].y != 0:
+            s[0].y = r[i]
+            i += 1
 
-        for i in range(len(v)):
-          v[i][0].y = r[len(h) + i]
+          if s[0].z != 0:
+            s[0].z = r[i]
 
-        for i in range(len(m)):
-          m[i][0].z = r[len(h) + len(v) + i]
 
       else:
         raise Exception('System is not isostatic!')
+      
