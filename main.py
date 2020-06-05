@@ -299,6 +299,8 @@ class MainWidget:
             self.insertionMode = InsertionMode.MOMENT
         elif event.char == "4":
             self.insertionMode = InsertionMode.SUPPORT
+        elif event.char == "s":
+            self.system.solveSystem()
 
         if self.insertionText != None:
             self.drawing_area.delete(self.insertionText)
@@ -770,7 +772,7 @@ class SupportWidget:
             
             label = self.master_window.drawing_area.create_text((tipX + tipX0) / 2 - 40 * pcos(force_angle) if force_angle <= 180 else (tipX + tipX0) / 2, (tipY + tipY0) // 2 - 30 * (uniformLoad), font = "Helvetica", text = f"{uniformLoad} kN/m")
 
-            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([uniformLoad])), start_pos, force_angle))
+            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([uniformLoad])), start_pos, force_angle + self.beamAngle))
             self.master_window.actions.append(Action(related = (forces, label, self.beamID, False, 0), type = ActionType.ADD_DISTRIBUTED))
 
         if radioOption == 1:
