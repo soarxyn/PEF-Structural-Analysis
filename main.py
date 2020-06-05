@@ -168,9 +168,17 @@ class MainWidget:
         if self.insertionMode == InsertionMode.BEAM:
             params = self.beamParameters(self.firstWaypoint, self.currentMousePosition)
             (beam, length) = self.drawBeam(params[0], params[1], params[3], params[2], event)
+            addedBeam : Beam = Beam(params[2])
+
+            if len(self.system.beams) > 0:
+                for beamItem in self.system.beams:
+                    if Point(beamItem[1].x, beamItem[1].y) == params[0]:
+                        beamItem[0].start[1].append(addedBeam)
+                    elif Point(beamItem[3].x, beamItem[3].y) == params[1]:
+                        beamItem[0].end[1].append(addedBeam)
 
             self.actions.append(Action(related = [beam, length, params[0], params[1]], type = ActionType.ADD_BEAM))
-            self.system.beams.append((Beam(params[2]), Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
+            self.system.beams.append((addedBeam, Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
 
             if not params[0] in self.snapPoints:
                 self.snapPoints.append(params[0])
@@ -187,7 +195,7 @@ class MainWidget:
                 for w in range(-15, 15):
                     for h in range(-15, 15):
                         if self.ownedDomain[x + w][y + h] == 0:
-                            self.ownedDomain[x + w][y + h] = barID
+                            self.ownedDomain[x + w][y + h] = barID                
         
         elif self.insertionMode == InsertionMode.FORCE:
             owner : int = self.ownedDomain[self.currentMousePosition.x][self.currentMousePosition.y]
@@ -304,20 +312,28 @@ class MainWidget:
                 for (x, y) in zip(rangeX, rangeY):
                     for w in range(-15, 15):
                         for h in range(-15, 15):
-                            self.ownedDomain[x + w][y + h] = 0
+                            self.ownedDomain[trunc(x + w)][trunc(y + h)] = 0
 
                 self.drawing_area.delete(beam)
                 self.drawing_area.delete(label)
                 self.system.beams.pop()
                 self.snapPoints.clear()
 
-                for beam in self.system.beams:
-                    if not beam[0] in self.snapPoints:
-                        self.snapPoints.append(Point(beam[1].x, beam[1].y))
+                for beamItem in self.system.beams:
+                    if not beamItem[0] in self.snapPoints:
+                        self.snapPoints.append(Point(beamItem[1].x, beamItem[1].y))
 
-                    if not beam[3] in self.snapPoints:
-                        self.snapPoints.append(Point(beam[3].x, beam[3].y))
+                    if not beamItem[3] in self.snapPoints:
+                        self.snapPoints.append(Point(beamItem[3].x, beamItem[3].y))
+
+                    if beam in beamItem[0].start[1]:
+                        beamItem[0].start[1].remove(beam)
+
+                    elif beam in beamItem[0].end[1]:
+                        beamItem[0].end[1].remove(beam)
             
+                del beam
+
             elif lastAction.type == ActionType.ADD_CONCENTRATED:
                 self.system.beams[lastAction.related[2] - 1][0].concentratedList.pop()
                 self.drawing_area.delete(lastAction.related[0])
