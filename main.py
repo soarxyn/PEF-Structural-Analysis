@@ -174,6 +174,10 @@ class MainWidget:
                 for beamItem in self.system.beams:
                     if Point(beamItem[1].x, beamItem[1].y) == params[0]:
                         beamItem[0].start[1].append(addedBeam)
+                    elif Point(beamItem[1].x, beamItem[1].y) == params[1]:
+                        beamItem[0].start[1].append(addedBeam)
+                    elif Point(beamItem[3].x, beamItem[3].y) == params[0]:
+                        beamItem[0].end[1].append(addedBeam)
                     elif Point(beamItem[3].x, beamItem[3].y) == params[1]:
                         beamItem[0].end[1].append(addedBeam)
 
@@ -592,7 +596,7 @@ class SupportWidget:
         tipX : float = self.master_force.x + (pos * pcos(self.beamAngle) * 10)
         tipY : float = self.master_force.y - (pos * psin(self.beamAngle) * 10)
 
-        self.master_window.system.beams[self.beamID - 1][0].concentratedList.append((Concentrated(length), pos, force_angle))
+        self.master_window.system.beams[self.beamID - 1][0].concentratedList.append((Concentrated(length), pos, force_angle + self.beamAngle))
         self.master_window.drawing_area.delete(self.master_window.forcePreview)
         self.master_window.drawing_area.delete(self.master_window.labelPreview)
 
@@ -673,8 +677,6 @@ class SupportWidget:
 
             scale = 1 if 0 <= uniformLoad <= 10 else 0.1 if 10 < uniformLoad < 100 else 0.01 if 100 <= uniformLoad < 1000 else 0.001
 
-            i : int = 0
-
             if len(self.master_window.forcePreview) != 0:
                 for force in self.master_window.forcePreview:
                     self.master_window.drawing_area.delete(force)
@@ -701,8 +703,6 @@ class SupportWidget:
             endLoad = int(self.distributedParameters[1].get()) if len(self.distributedParameters[1].get()) != 0 else 1
 
             scale = 1
-
-            i : int = 0
 
             if self.master_window.startLabelPreview != None and self.master_window.startLabelPreview != 0:
                 self.master_window.drawing_area.delete(self.master_window.startLabelPreview)
@@ -744,8 +744,6 @@ class SupportWidget:
 
             scale = 1 if 0 <= uniformLoad <= 10 else 0.1 if 10 < uniformLoad < 100 else 0.01 if 100 <= uniformLoad < 1000 else 0.001
 
-            i : int = 0
-
             if len(self.master_window.forcePreview) != 0:
                 for force in self.master_window.forcePreview:
                     self.master_window.drawing_area.delete(force)
@@ -775,8 +773,6 @@ class SupportWidget:
             endLoad = int(self.distributedParameters[1].get()) if len(self.distributedParameters[1].get()) != 0 else 1
 
             scale = 1
-
-            i : int = 0
 
             if len(self.master_window.forcePreview) != 0:
                 for force in self.master_window.forcePreview:
@@ -809,7 +805,7 @@ class SupportWidget:
 
             label = self.master_window.drawing_area.create_text(tipX, tipY - 5 - 25 * endLoad, font = "Helvetica", text = f"{endLoad} kN/m")
 
-            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([startLoad, (endLoad - startLoad) / (end_pos - start_pos)])), start_pos, force_angle))
+            self.master_window.system.beams[self.beamID - 1][0].distributedList.append((Distributed(end_pos - start_pos, Polynomial([startLoad, (endLoad - startLoad) / (end_pos - start_pos)])), start_pos, force_angle + self.beamAngle))
             self.master_window.actions.append(Action(related = (forces, label, self.beamID, startLoad != 0, startLabel), type = ActionType.ADD_DISTRIBUTED))
 
         for force in self.master_window.forcePreview:
