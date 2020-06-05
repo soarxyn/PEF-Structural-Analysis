@@ -8,7 +8,7 @@ class Concentrated:
 
 	def forceVector(self, angle: float) -> Vector3:
 		return Vector3(
-			self.magnitude*pcos(angle),
+			-self.magnitude*pcos(angle),
 			-self.magnitude*psin(angle),
 			0
 		)
@@ -16,10 +16,10 @@ class Concentrated:
 class Distributed:
 	def __init__(self, length: float, distribution: Polynomial):
 		self.length: float = length
-		self.distribution: Polynomial = distribution
+		self.distribution: Polynomial = Polynomial(distribution.coefficients.copy())
 
 	def equivalent(self, l: float, u: float) -> Tuple[Concentrated, float]:	# tuple float is the equivalent force's point of application
-		p1: Polynomial = Polynomial(self.distribution.coefficients)
+		p1: Polynomial = Polynomial(self.distribution.coefficients.copy())
 		p1.coefficients.insert(0, 0)
 		p1.degree = self.distribution.degree + 1
 		integral: float = integrate(self.distribution, l, u)
@@ -29,7 +29,7 @@ class Distributed:
 		)
 
 	def angledComponents(self, angle: float) -> Tuple[Distributed, Distributed]:	# the first load is applied in parallel to the referential axis, while the second one is applied perpendicularly
-		basePolynomial: Polynomial = Polynomial(self.distribution.coefficients)
+		basePolynomial: Polynomial = Polynomial(self.distribution.coefficients.copy())
 		if self.distribution.degree < 1:
 			basePolynomial.coefficients.append(pcot(angle))
 			basePolynomial.degree = 1
