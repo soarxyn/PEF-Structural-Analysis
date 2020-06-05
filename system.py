@@ -6,8 +6,8 @@ from support import Support
 
 class System:
   def __init__(self):
-    self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()  # the tuple vectors are the beam's start and end position, respectively, with respect to the
-                                                              # center of the coordinate system, while the float is its angle with respect to the x axis
+    self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list() # the tuple vectors are the beam's start and end position, respectively, with respect to the
+                                                                    # center of the coordinate system, while the float is its angle with respect to the x axis
 
   def solveSystem(self):
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
@@ -18,12 +18,16 @@ class System:
     result: Vector3 = None
     r: List[float] = list()
 
-    for beam in self.beams:
-      if isinstance(beam[0].start, Support):
-        supports.append((beam[0].start.reaction, beam[1]))
+    def scaleBeam(b):
+      return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
 
-      if isinstance(beam[0].end, Support):
-        supports.append((beam[0].end.reaction, beam[3]))
+    scaledBeams = list(map(lambda b: scaleBeam(b), self.beams.copy()))
+    for beam in scaledBeams:
+      if isinstance(beam[0].start[0], Support):
+        supports.append((beam[0].start[0].reaction, beam[1]))
+
+      if isinstance(beam[0].end[0], Support):
+        supports.append((beam[0].end[0].reaction, beam[3]))
 
 
       for concentrated in beam[0].concentratedList:
@@ -41,8 +45,8 @@ class System:
         b.y -= force.y
         b.z -= force.y*pos.x - force.x*pos.y
 
-      b.z -= beam[0].moment.magnitude
-
+      if beam[0].moment != None:
+        b.z -= beam[0].moment.magnitude
 
       i: int = 0
       for s in supports:
@@ -58,6 +62,7 @@ class System:
 
         if s[0].z != 0:
           coefs[2][i] = s[0].z
+          i += 1
 
 
       if i == 3:
@@ -76,6 +81,7 @@ class System:
 
           if s[0].z != 0:
             s[0].z = r[i]
+            i += 1
 
 
       else:
