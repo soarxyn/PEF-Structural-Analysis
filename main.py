@@ -170,7 +170,7 @@ class MainWidget:
             (beam, length) = self.drawBeam(params[0], params[1], params[3], params[2], event)
 
             self.actions.append(Action(related = [beam, length, params[0], params[1]], type = ActionType.ADD_BEAM))
-            self.system.beams.append((Beam(params[3]), Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
+            self.system.beams.append((Beam(params[2]), Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
 
             if not params[0] in self.snapPoints:
                 self.snapPoints.append(params[0])
