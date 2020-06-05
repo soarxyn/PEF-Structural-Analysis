@@ -31,7 +31,7 @@ class System:
 
 
       for concentrated in beam[0].concentratedList:
-        force: Vector3 = concentrated[0].forceVector(beam[2] + concentrated[2])
+        force: Vector3 = concentrated[0].forceVector(concentrated[2] - beam[2])
         pos: Vector3 = beam[0].pointPos(beam[1], concentrated[1], beam[2])
         b.x -= force.x
         b.y -= force.y
@@ -39,7 +39,7 @@ class System:
 
       for distributed in beam[0].distributedList:
         equivalent: Tuple[Concentrated, float] = distributed[0].equivalent(0, distributed[0].length)
-        force: Vector3 = equivalent[0].forceVector(beam[2] + distributed[2])
+        force: Vector3 = equivalent[0].forceVector(distributed[2] - beam[2])
         pos: Vector3 = beam[0].pointPos(beam[1], distributed[1] + equivalent[1], beam[2])
         b.x -= force.x
         b.y -= force.y
