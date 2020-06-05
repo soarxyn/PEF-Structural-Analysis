@@ -1,4 +1,4 @@
-from tkinter import *w
+from tkinter import *
 from ttkthemes import themed_tk as tk
 from typing import Deque, List, Tuple, Iterable, Iterator, Optional, Callable
 from enum import IntEnum
