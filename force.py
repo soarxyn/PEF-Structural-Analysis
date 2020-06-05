@@ -8,7 +8,7 @@ class Concentrated:
 
 	def forceVector(self, angle: float) -> Vector3:
 		return Vector3(
-			-self.magnitude*pcos(angle),
+			self.magnitude*pcos(angle),
 			-self.magnitude*psin(angle),
 			0
 		)
