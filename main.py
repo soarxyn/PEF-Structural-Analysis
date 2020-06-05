@@ -174,16 +174,16 @@ class MainWidget:
                 for beamItem in self.system.beams:
                     if Point(beamItem[1].x, beamItem[1].y) == params[0]:
                         beamItem[0].start[1].append(addedBeam)
-                        addedBeam[0].start[1].append(addedBeam)
+                        addedBeam.start[1].append(addedBeam)
                     elif Point(beamItem[1].x, beamItem[1].y) == params[1]:
                         beamItem[0].start[1].append(addedBeam)
-                        addedBeam[0].end[1].append(addedBeam)
+                        addedBeam.end[1].append(addedBeam)
                     elif Point(beamItem[3].x, beamItem[3].y) == params[0]:
                         beamItem[0].end[1].append(addedBeam)
-                        addedBeam[0].start[1].append(addedBeam)
+                        addedBeam.start[1].append(addedBeam)
                     elif Point(beamItem[3].x, beamItem[3].y) == params[1]:
                         beamItem[0].end[1].append(addedBeam)
-                        addedBeam[0].end[1].append(addedBeam)
+                        addedBeam.end[1].append(addedBeam)
 
             self.actions.append(Action(related = [beam, length, params[0], params[1]], type = ActionType.ADD_BEAM))
             self.system.beams.append((addedBeam, Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
