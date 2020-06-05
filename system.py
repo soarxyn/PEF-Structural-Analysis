@@ -5,7 +5,8 @@ from force import Concentrated, Distributed, Moment
 from support import Support
 
 class System:
-  beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()  # the tuple vectors are the beam's start and end position, respectively, with respect to the
+  def __init__(self):
+    self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()  # the tuple vectors are the beam's start and end position, respectively, with respect to the
                                                               # center of the coordinate system, while the float is its angle with respect to the x axis
 
   def solveSystem(self):

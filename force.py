@@ -3,10 +3,8 @@ from typing import Tuple
 from auxiliary.algebra import Vector3, Polynomial, integrate, psin, pcos, pcot
 
 class Concentrated:
-	magnitude: float = None
-
 	def __init__(self, magnitude: float):
-		self.magnitude = magnitude
+		self.magnitude: float = magnitude
 
 	def forceVector(self, angle: float) -> Vector3:
 		return Vector3(
@@ -16,12 +14,9 @@ class Concentrated:
 		)
 
 class Distributed:
-	length: float = None
-	distribution: Polynomial = None
-
 	def __init__(self, length: float, distribution: Polynomial):
-		self.length = length
-		self.distribution = distribution
+		self.length: float = length
+		self.distribution: Polynomial = distribution
 
 	def equivalent(self, l: float, u: float) -> Tuple[Concentrated, float]:	# tuple float is the equivalent force's point of application
 		p1: Polynomial = Polynomial(self.distribution.coefficients)
@@ -46,7 +41,5 @@ class Distributed:
 		)
 
 class Moment:
-	magnitude: float = None
-
 	def __init__(self, magnitude : float):
-		self.magnitude = magnitude
+		self.magnitude: float = magnitude

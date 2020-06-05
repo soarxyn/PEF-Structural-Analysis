@@ -6,18 +6,16 @@ from force import Concentrated, Distributed, Moment
 from support import Support
 
 class Beam:
-	length: float = None
-	start: Tuple[Support, List[Beam]] = (None, list())	# beam can be attached to other
-	end: Tuple[Support, List[Beam]] = (None, list())		# beams or to a support
-
-	concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
-	distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
-	moment: Moment = None
-
-	stress: List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]] = list()
-
 	def __init__(self, length: float):
-		self.length = length
+		self.length: float = length
+		self.start: Tuple[Support, List[Beam]] = (None, list())	# beam can be attached to other
+		self.end: Tuple[Support, List[Beam]] = (None, list())		# beams or to a support
+
+		self.concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
+		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
+		self.moment: Moment = None
+
+		self.stress: List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]] = list()
 
 	def pointPos(self, startPos: Vector3, point: float, angle: float) -> Vector3:
 		if point > self.length or point < 0:
