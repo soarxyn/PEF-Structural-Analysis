@@ -14,8 +14,8 @@ class Support:
       self.reaction.x = 1
       self.reaction.y = 1
     else:
-      self.reaction.x = -psin(angle)
-      self.reaction.y = pcos(angle)
+      self.reaction.x = pcos(angle)
+      self.reaction.y = psin(angle)
 
     if SupportType[name].value[1] == 1:
       self.reaction.z = 1
