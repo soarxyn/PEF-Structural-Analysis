@@ -43,7 +43,7 @@ class System:
       b.z -= beam[0].moment.magnitude
 
 
-      i: float = 0
+      i: int = 0
       for s in supports:
         if s[0].x != 0:
           coefs[0][i] = s[0].x
