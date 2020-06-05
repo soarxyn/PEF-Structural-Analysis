@@ -145,7 +145,8 @@ class MainWidget:
             angle = snap if angle > 0 else - snap
 
         end = Point(end.x, start.y - (end.x  - start.x) * ptan(angle)) if abs(angle) != 90 else Point(start.x, end.y)
-        length : float = dist(end, start) / 10
+        length : float = round(dist(end, start) / 10, 1)
+        print(length)
 
         return (start, end, length, angle) 
 
