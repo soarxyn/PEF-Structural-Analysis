@@ -1,9 +1,13 @@
 from __future__ import annotations
 from functools import partial
 from typing import List, Tuple, Callable
+from collections import namedtuple
 from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate
 from force import Concentrated, Distributed, Moment
 from support import Support
+
+StressFunctions = namedtuple("Stress Functions", ("normal", "shear", "bending"))
+BoundedStressFunctions = namedtuple("Bounded Stress Functions", ("Stress Functions", "position"))
 
 class Beam:
 	def __init__(self, length: float):
@@ -23,7 +27,7 @@ class Beam:
 
 		return startPos + Vector3(point*pcos(angle), point*psin(angle), 0)
 
-	def solve(self, reaction: Vector3, endFirst: bool) -> List[Tuple[Tuple[Callable[[float], float], Callable[[float], float], Callable[[float], float]], float]]:
+	def solve(self, reaction: Vector3, endFirst: bool) -> List[Tuple[StressFunctions, float]]:
 		forces: List = (self.concentratedList + self.distributedList).sort(key = lambda v: v[1], reverse = endFirst)
 		resulting: Vector3 = -reaction if endFirst else reaction
 		pos: float = None
@@ -104,7 +108,7 @@ class Beam:
 			return resulting.y*abs(x - p) - resulting.z
 
 
-		r: List[Tuple[Callable[[float], float], Callable[[float], float], Callable[[float], float]], float] = list()
+		r: List[Tuple[StressFunctions, float]] = list()	# tuple float is the relative position up to where the stress functions act
 
 		pNormal: Callable[[float], float] = partial(normal, 0)
 		pShear: Callable[[float], float] = partial(shear, 0)
