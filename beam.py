@@ -40,9 +40,9 @@ class Beam:
 			v: Vector3
 			if isinstance(force[0], Distributed):
 				pos -= force[0].length if endFirst else -force[0].length
-				a: Tuple[Polynomial, Polynomial] = force[0].angledComponents(force[2])
-				a[0].coefficients[0] -= resulting.x
-				a[1].coefficients[0] += resulting.y
+				a: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
+				a[0].distribution.coefficients[0] -= resulting.x
+				a[1].distribution.coefficients[0] += resulting.y
 				if endFirst:
 					a = (-a[0], -a[1])
 
