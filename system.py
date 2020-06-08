@@ -1,6 +1,6 @@
 from typing import List, Tuple, Callable, Union
 from auxiliary.algebra import Vector3, Polynomial, Matrix3x3, solve, rotate
-from beam import Beam, BoundedStressFunctions
+from beam import Beam, StressFunctions
 from force import Concentrated, Distributed, Moment
 from support import Support
 
@@ -9,13 +9,13 @@ class System:
     self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list() # the tuple vectors are the beam's start and end position, respectively, with respect to the
                                                                     # center of the coordinate system, while the float is its angle with respect to the x axis
 
-  def solveSystem(self) -> List[Tuple[List[BoundedStressFunctions], bool]]:
+  def solveSystem(self) -> List[Tuple[StressFunctions, bool]]:
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     b: Vector3 = Vector3(0, 0, 0)
 
     supports: List[Tuple[Vector3, Vector3]] = list() # the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
 
-    result: Vector3 = None
+    result: Vector3
     r: List[float] = list()
 
     DFSRoot: Beam
@@ -54,15 +54,14 @@ class System:
 
     i: int = 0
     for s in supports:
-      if s[0].x != 0:
-        coefs[0][i] = s[0].x
-        coefs[2][i] = -s[1].y
+      coefs[0][i] = s[0].x
+      coefs[2][i] = -s[0].x*s[1].y
+      if s[0].x == 1 and s[0].y == 1:
         i += 1
 
-      if s[0].y != 0:
-        coefs[1][i] = s[0].y
-        coefs[2][i] = s[1].x
-        i += 1
+      coefs[1][i] = s[0].y
+      coefs[2][i] += s[0].y*s[1].x
+      i += 1
 
       if s[0].z != 0:
         coefs[2][i] = s[0].z
@@ -76,22 +75,22 @@ class System:
       i = 0
       for s in supports:
         if s[0].x != 0:
-          s[0].x = r[i]
+          s[0].x *= r[i]
           i += 1
 
         if s[0].y != 0:
-          s[0].y = r[i]
+          s[0].y *= r[i]
           i += 1
 
         if s[0].z != 0:
-          s[0].z = r[i]
+          s[0].z *= r[i]
           i += 1
 
     else:
       raise Exception('System is not isostatic!')
 
 
-    solution: List[Tuple[List[BoundedStressFunctions], bool]] = list()
+    solution: List[Tuple[StressFunctions, bool]] = [None]*len(self.beams)
 
     def solveBeamsDFS(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
       v: Vector3 = Vector3(0, 0 ,0)
@@ -130,7 +129,7 @@ class System:
       else:
         raise Exception('No parent given!')
 
-      solution.insert(i, (b.solve(v, endFirst), endFirst))
+      solution[i] = (b.solve(v, endFirst), endFirst)
 
       return (v, self.beams[i][2])
 
