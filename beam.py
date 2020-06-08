@@ -84,8 +84,9 @@ class Beam:
 				if x < stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					d = i + d
-					if isinstance(forces[d][0], Distributed):
-						return integrate(stress[i][0][1], abs(x - p), forces[d][0].length) if endFirst else integrate(stress[i][0][1], 0, abs(x - p))
+					if d < len(forces):
+						if isinstance(forces[d][0], Distributed):
+							return integrate(stress[i][0][1], abs(x - p), forces[d][0].length) if endFirst else integrate(stress[i][0][1], 0, abs(x - p))
 
 					else:
 						return stress[i][0][1](abs(x - p))
@@ -101,9 +102,10 @@ class Beam:
 				if x < stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					d = i + d
-					if isinstance(forces[d][0], Distributed):
-						e: Tuple[Concentrated, float] = forces[d][0].equivalent(abs(x - p), forces[d][0].length) if endFirst else forces[d][0].equivalent(0, abs(x - p))
-						return stress[i][0][2](abs(x - p)) + e[0].y*e[1] if endFirst else stress[i][0][2][0] + e[0].y*abs(x - p - e[1])
+					if d < len(forces):
+						if isinstance(forces[d][0], Distributed):
+							e: Tuple[Concentrated, float] = forces[d][0].equivalent(abs(x - p), forces[d][0].length) if endFirst else forces[d][0].equivalent(0, abs(x - p))
+							return stress[i][0][2](abs(x - p)) + e[0].y*e[1] if endFirst else stress[i][0][2][0] + e[0].y*abs(x - p - e[1])
 
 					else:
 						return stress[i][0][2](abs(x - p))
