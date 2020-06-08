@@ -66,8 +66,9 @@ class Beam:
 				if x < stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					d = i + d
-					if isinstance(forces[d][0], Distributed):
-						return integrate(stress[i][0][0], abs(x - p), forces[d][0].length) if endFirst else integrate(stress[i][0][0], 0, abs(x - p))
+					if d < len(forces):
+						if isinstance(forces[d][0], Distributed):
+							return integrate(stress[i][0][0], abs(x - p), forces[d][0].length) if endFirst else integrate(stress[i][0][0], 0, abs(x - p))
 
 					else:
 						return stress[i][0][0](abs(x - p))
