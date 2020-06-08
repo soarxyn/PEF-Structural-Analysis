@@ -8,7 +8,7 @@ from collections import deque, namedtuple
 from math import dist, degrees, atan2, copysign
 from auxiliary.algebra import psin, pcos, ptan, Vector3, Polynomial
 from functools import partial
-from beam import Beam
+from beam import Beam, StressFunctions
 from PIL import ImageTk, Image
 from force import Concentrated, Distributed, Moment
 from support import Support, SupportType
@@ -946,27 +946,33 @@ class ResultWidget:
         self.master.geometry(f"1360x768")
         self.master.title(name)
         
-        self.drawing_area = Canvas(root, width = 1360, height = 768)
-        self.drawing_area.pack(fill = BOTH, expand = True, side = TOP)
+        self.canvas = Canvas(self.master, width = 1360, height = 768)
+        self.canvas.pack(fill = BOTH, expand = True, side = TOP)
 
         for (i, beam) in enumerate(beams):
             start = Point(beam[1].x, beam[1].y)
             end = Point(beam[3].x, beam[3].y)
 
-            event.widget.create_line((start, end), smooth = True, width = 5, fill="#404040")
+            self.canvas.create_line((start, end), smooth = True, width = 5, fill="#404040")
 
-            (stressFunctions, endFirst) = polynomials[i]
+            stressFunctions : StressFunctions = polynomials[i][0]
+            endFirst = polynomials[i][1]
+
             length = beam[0].length
+            angle = beam[2]
 
-            positions = list(map(lambda fun: fun.position, stressFunctions))
+            tipX = start.x if not endFirst else end.x
+            tipY = start.y if not endFirst else end.y
 
-            print(positions)
+            scale = -1 if polyID != 2 else 0.1  
+            startFactor = 1 if not endFirst else -1
 
-            startFun = start if not endFirst else end
+            for j in range(0, 100):
+                fun = stressFunctions[polyID](j * length / 100)
 
-            #for stressFunction in stressFunctions:
-                
-
+                self.canvas.create_line(tipX, tipY, tipX, tipY + 20 * fun * scale)
+                tipX += 1 / 10 * length * pcos(angle) * startFactor
+                tipY += 1 / 10 * length * psin(angle) * startFactor
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
