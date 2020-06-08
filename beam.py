@@ -27,20 +27,22 @@ class Beam:
 		forces : List = sorted(self.concentratedList + self.distributedList, key = lambda v: v[1], reverse = endFirst)
 
 		resulting: Vector3 = -reaction if endFirst else reaction
-		pos: float
+		pos: float = 0
 
 		stress: List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]] = list()
 
 		for force in forces:
+			prev: float = pos
 			pos = self.length - force[1] if endFirst else force[1]
 			stress.append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
 
+			resulting.z -= resulting.y*(pos - prev)
 			v: Vector3
 			if isinstance(force[0], Distributed):
 				pos -= force[0].length if endFirst else -force[0].length
 				a: Tuple[Polynomial, Polynomial] = force[0].angledComponents(force[2])
-				a[0][0] -= resulting.x
-				a[1][0] += resulting.y
+				a[0].coefficients[0] -= resulting.x
+				a[1].coefficients[0] += resulting.y
 				if endFirst:
 					a = (-a[0], -a[1])
 
