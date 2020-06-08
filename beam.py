@@ -6,8 +6,8 @@ from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate
 from force import Concentrated, Distributed, Moment
 from support import Support
 
-StressFunctions = namedtuple("Stress Functions", ("normal", "shear", "bending"))
-BoundedStressFunctions = namedtuple("Bounded Stress Functions", ("Stress Functions", "position"))
+StressFunctions = namedtuple("StressFunctions", ("normal", "shear", "bending"))
+BoundedStressFunctions = namedtuple("BoundedStressFunctions", ("stressFunctions", "position"))
 
 class Beam:
 	def __init__(self, length: float):
