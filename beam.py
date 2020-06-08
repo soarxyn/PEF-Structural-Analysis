@@ -45,7 +45,7 @@ class Beam:
 				a[1].distribution.coefficients[0] += resulting.y
 				b: Tuple[Polynomial, Polynomial] = (-a[0].distribution, -a[1].distribution) if endFirst else (a[0].distribution, a[1].distribution)
 
-				stress.append(((-b[0], b[1], Polynomial(-resulting.z)), pos))
+				stress.append(((-b[0], b[1], Polynomial([-resulting.z])), pos))
 
 				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
 				v = equivalent[0].forceVector(force[2])
