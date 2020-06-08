@@ -36,7 +36,7 @@ class Beam:
 			pos = self.length - force[1] if endFirst else force[1]
 			stress.append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
 
-			resulting.z -= resulting.y*(pos - prev)
+			resulting.z -= resulting.y*abs(pos - prev)
 			v: Vector3
 			if isinstance(force[0], Distributed):
 				pos -= force[0].length if endFirst else -force[0].length
@@ -50,7 +50,7 @@ class Beam:
 				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
 				v = equivalent[0].forceVector(force[2])
 
-				resulting += v.y*equivalent[1]
+				resulting.z += v.y*abs(pos - prev - equivalent[1])
 
 			else:
 				v = force[0].forceVector(force[2])
