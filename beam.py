@@ -28,9 +28,23 @@ class Beam:
 		return startPos + Vector3(point*pcos(angle), point*psin(angle), 0)
 
 	def solve(self, reaction: Vector3, endFirst: bool) -> List[Tuple[StressFunctions, float]]:
-		forces: List = (self.concentratedList + self.distributedList).sort(key = lambda v: v[1], reverse = endFirst)
+		print(self.concentratedList)
+		print(self.distributedList)
+
+		forces : List = list()
+
+		if self.concentratedList != None:
+			forces = [*forces, *self.concentratedList]
+
+		if self.distributedList != None:
+			forces = [*forces, *self.distributedList]
+
+		forces = sorted(forces, key = lambda v: v[1], reverse = endFirst)
+
 		resulting: Vector3 = -reaction if endFirst else reaction
 		pos: float = None
+
+		print(forces)
 
 		for force in forces:
 			pos = self.length - force[1] if endFirst else force[1]
@@ -114,12 +128,11 @@ class Beam:
 		pShear: Callable[[float], float] = partial(shear, 0)
 		pBending: Callable[[float], float] = partial(bending, 0)
 
-		for i in range(self.stress):
+		for i in range(len(self.stress)):
 			r.append(((pNormal, pShear, pBending), self.stress[i][1]))
 			pNormal = partial(normal, self.stress[i][1])
 			pShear = partial(shear, self.stress[i][1])
 			pBending = partial(bending, self.stress[i][1])
-
 		
 		r.append(((pNormal, pShear, pBending), self.stress[len(self.stress) - 1][1]))
 

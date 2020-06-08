@@ -300,7 +300,15 @@ class MainWidget:
         elif event.char == "4":
             self.insertionMode = InsertionMode.SUPPORT
         elif event.char == "s":
-            self.system.solveSystem()
+            polynomials = self.system.solveSystem()
+
+            supportNormal = Toplevel(self.drawing_area)
+            supportShear = Toplevel(self.drawing_area)
+            supportBending = Toplevel(self.drawing_area)
+
+            normal = ResultWidget(supportNormal, "Normal", self.system.beams.copy(), polynomials, 0)
+            shear = ResultWidget(supportShear, "Cortante", self.system.beams.copy(), polynomials, 1)
+            bending = ResultWidget(supportBending, "Momento", self.system.beams.copy(), polynomials, 2)
 
         if self.insertionText != None:
             self.drawing_area.delete(self.insertionText)
@@ -930,6 +938,35 @@ class SupportWidget:
         self.master_window.actions.append(Action(related = (support, supportAsset, self.beamID, position), type = ActionType.ADD_SUPPORT))
         self.master_window.inserting = False
         self.master.destroy()
+
+class ResultWidget:
+
+    def __init__(self, master, name: str, beams, polynomials, polyID):
+        self.master = master
+        self.master.geometry(f"1360x768")
+        self.master.title(name)
+        
+        self.drawing_area = Canvas(root, width = 1360, height = 768)
+        self.drawing_area.pack(fill = BOTH, expand = True, side = TOP)
+
+        for (i, beam) in enumerate(beams):
+            start = Point(beam[1].x, beam[1].y)
+            end = Point(beam[3].x, beam[3].y)
+
+            event.widget.create_line((start, end), smooth = True, width = 5, fill="#404040")
+
+            (stressFunctions, endFirst) = polynomials[i]
+            length = beam[0].length
+
+            positions = list(map(lambda fun: fun.position, stressFunctions))
+
+            print(positions)
+
+            startFun = start if not endFirst else end
+
+            #for stressFunction in stressFunctions:
+                
+
 
 if __name__ == "__main__":
     root = tk.ThemedTk()

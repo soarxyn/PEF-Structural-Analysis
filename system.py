@@ -130,7 +130,7 @@ class System:
       else:
         raise Exception('No parent given!')
 
-      solution[i] = (beam[0].solve(v, endFirst), endFirst)
+      solution.insert(i, (b.solve(v, endFirst), endFirst))
 
       return (v, self.beams[i][2])
 
