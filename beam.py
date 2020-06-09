@@ -51,7 +51,7 @@ class Beam:
 					s = -t[1].distribution
 
 				b: Polynomial = Polynomial(s.coefficients.copy())
-				b.coefficients.insert(0, 0)
+				b.coefficients.insert(0, resulting.y)
 				b.degree = s.degree + 1
 
 				n.coefficients.append(-resulting.x)
