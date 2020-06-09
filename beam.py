@@ -82,7 +82,7 @@ class Beam:
 			if x <= self.stress[0][i][1]:
 				p: float = self.stress[0][i - 1][1] if i > 0 else 0
 				if self.stress[0][i][0][0].degree > 0:
-					return integrate(self.stress[0][i][0][polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else integrate(self.stress[0][i][0][polyID], 0, abs(x - p)), self.stress[1]
+					return integrate(self.stress[0][i][0][polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else integrate(self.stress[0][i][0][polyID], 0, abs(x - p))
 				else:
 					return self.stress[0][i][0][polyID](abs(x - p))
 
