@@ -1,11 +1,8 @@
 from __future__ import annotations
-from typing import List, Tuple, Callable
-from collections import namedtuple
+from typing import List, Tuple, Union
 from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate
 from force import Concentrated, Distributed, Moment
 from support import Support
-
-StressFunctions = namedtuple("StressFunctions", ("normal", "shear", "bending"))
 
 class Beam:
 	def __init__(self, length: float):
@@ -17,41 +14,55 @@ class Beam:
 		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
 		self.moment: Moment = None
 
+		self.stress: Tuple[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], bool] = None
+
 	def pointPos(self, startPos: Vector3, point: float, angle: float) -> Vector3:
 		if point > self.length or point < 0:
 			raise Exception('Point is outside the beam!')
 
 		return startPos + Vector3(point*pcos(angle), point*psin(angle), 0)
 
-	def solve(self, reaction: Vector3, endFirst: bool) -> StressFunctions:
-		forces : List = sorted(self.concentratedList + self.distributedList, key = lambda v: v[1], reverse = endFirst)
+	def solve(self, reaction: Vector3, endFirst: bool):
+		self.stress = (list(), endFirst)
+		forces: List[Tuple[Union[Concentrated, Distributed], float, float]] = sorted(self.concentratedList + self.distributedList, key = lambda v: v[1], reverse = endFirst)
 
 		resulting: Vector3 = -reaction if endFirst else reaction
 		pos: float = 0
 
-		stress: List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]] = list()
-
 		for force in forces:
 			prev: float = pos
 			pos = self.length - force[1] if endFirst else force[1]
-			stress.append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
+			self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
 
 			resulting.z -= resulting.y*abs(pos - prev)
 			v: Vector3
 			if isinstance(force[0], Distributed):
 				prev = pos
 				pos += force[0].length
-				a: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
-				a[0].distribution.coefficients[0] -= resulting.x
-				a[1].distribution.coefficients[0] += resulting.y
-				b: Tuple[Polynomial, Polynomial] = (-a[0].distribution, -a[1].distribution) if endFirst else (a[0].distribution, a[1].distribution)
 
-				stress.append(((-b[0], b[1], Polynomial([-resulting.z])), pos))
+				t: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
+				t[0].distribution.coefficients[0] -= resulting.x
+				t[1].distribution.coefficients[0] -= resulting.y
+
+				n: Polynomial
+				s: Polynomial
+				if endFirst:
+					n = -t[0].distribution
+					s = -t[1].distribution
+				else:
+					n = t[0].distribution
+					s = t[1].distribution
+
+				b: Polynomial = Polynomial(s.coefficients.copy())
+				b.coefficients.insert(0, -resulting.z)
+				b.degree = s.degree + 1
+
+				self.stress[0].append(((n, s, b), pos))
 
 				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
 				v = equivalent[0].forceVector(force[2])
 
-				resulting.z += v.y*abs(pos - prev - equivalent[1])
+				resulting.z -= v.y*abs(pos - prev - equivalent[1])
 
 			else:
 				v = force[0].forceVector(force[2])
@@ -61,54 +72,18 @@ class Beam:
 			else:
 				resulting += v
 
-		def normal(x: float) -> float:
-			d: int = 0
+		self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), self.length))
 
-			for i in range(len(stress)):
-				if stress[i][0][2].degree == 0:
-					d += 1
+	def stressFunction(self, polyID: int, x: float) -> float:
+		if self.stress == None:
+			raise Exception('Beam yet to be solved!')
 
-				if x <= stress[i][1]:
-					p: float = stress[i - 1][1] if i > 0 else 0
-					if stress[i][0][2].degree == 0:
-						return integrate(stress[i][0][0], abs(x - p), forces[i - d][0].length) if endFirst else integrate(stress[i][0][0], 0, abs(x - p))
-					else:
-						return stress[i][0][0](abs(x - p))
+		for i in range(len(self.stress[0])):
+			if x <= self.stress[0][i][1]:
+				p: float = self.stress[0][i - 1][1] if i > 0 else 0
+				if self.stress[0][i][0][0].degree > 0:
+					return integrate(self.stress[0][i][0][polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else integrate(self.stress[0][i][0][polyID], 0, abs(x - p)), self.stress[1]
+				else:
+					return self.stress[0][i][0][polyID](abs(x - p))
 
-			return -resulting.x
-
-		def shear(x:float) -> float:
-			d: int = 0
-
-			for i in range(len(stress)):
-				if stress[i][0][2].degree == 0:
-					d += 1
-
-				if x <= stress[i][1]:
-					p: float = stress[i - 1][1] if i > 0 else 0
-					if stress[i][0][2].degree == 0:
-						return integrate(stress[i][0][1], abs(x - p), forces[i - d][0].length) if endFirst else integrate(stress[i][0][1], 0, abs(x - p))
-					else:
-						return stress[i][0][1](abs(x - p))			
-
-			return resulting.y
-
-		def bending(x: float) -> float:
-			d: int = 0
-
-			for i in range(len(stress)):
-				if stress[i][0][2].degree == 0:
-					d += 1
-
-				if x <= stress[i][1]:
-					p: float = stress[i - 1][1] if i > 0 else 0
-					if stress[i][0][2].degree == 0:
-						e: Tuple[Concentrated, float] = forces[i - d][0].equivalent(abs(x - p), forces[i - d][0].length) if endFirst else forces[i - d][0].equivalent(0, abs(x - p))
-						v: Vector3 = e[0].forceVector(forces[i - d][2])
-						return stress[i][0][2](abs(x - p)) + v.y*e[1] if endFirst else stress[i][0][2](abs(x - p)) + v.y*abs(x - p - e[1])
-					else:
-						return stress[i][0][2](abs(x - p))
-
-			return resulting.y*abs(x - pos) - resulting.z
-
-		return (normal, shear, bending)
+		raise Exception('x out of range!')
