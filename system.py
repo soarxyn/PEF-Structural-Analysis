@@ -103,13 +103,13 @@ class System:
           break
 
       if b.start[0] != None:
-        v = rotate(b.start[0].reaction, self.beams[i][2])
+        v = rotate(b.start[0].reaction, -self.beams[i][2])
         endFirst = False
       elif b.end[0] != None:
-        v = rotate(b.end[0].reaction, self.beams[i][2])
+        v = rotate(b.end[0].reaction, -self.beams[i][2])
         endFirst = True
       elif p != None:
-        v = rotate(p[1], self.beams[i][2] - p[2])
+        v = rotate(p[1], p[2] - self.beams[i][2])
         endFirst = p[0] in b.end[1]
       else:
         raise Exception('Cannot find reaction!')
