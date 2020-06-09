@@ -41,9 +41,6 @@ class Beam:
 				pos += force[0].length
 
 				t: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
-				t[0].distribution.coefficients[0] -= resulting.x
-				t[1].distribution.coefficients[0] -= resulting.y
-
 				n: Polynomial
 				s: Polynomial
 				if endFirst:
@@ -54,8 +51,12 @@ class Beam:
 					s = -t[1].distribution
 
 				b: Polynomial = Polynomial(s.coefficients.copy())
-				b.coefficients.insert(0, -resulting.z)
+				b.coefficients.insert(0, 0)
 				b.degree = s.degree + 1
+
+				n.coefficients.append(-resulting.x)
+				s.coefficients.append(resulting.y)
+				b.coefficients.append(-resulting.z)
 
 				self.stress[0].append(((n, s, b), pos))
 
@@ -81,9 +82,10 @@ class Beam:
 		for i in range(len(self.stress[0])):
 			if x <= self.stress[0][i][1]:
 				p: float = self.stress[0][i - 1][1] if i > 0 else 0
-				if self.stress[0][i][0][0].degree > 0:
-					return integrate(self.stress[0][i][0][polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else integrate(self.stress[0][i][0][polyID], 0, abs(x - p))
+				f: Tuple[Polynomial, Polynomial, Polynomial] = self.stress[0][i][0]
+				if f[0].degree > 0:
+					return f[polyID].coefficients[f[polyID].degree + 1] + integrate(f[polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else f[polyID].coefficients[f[polyID].degree + 1] + integrate(f[polyID], 0, abs(x - p))
 				else:
-					return self.stress[0][i][0][polyID](abs(x - p))
+					return f[polyID](abs(x - p))
 
 		raise Exception('x out of range!')
