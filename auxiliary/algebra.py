@@ -166,6 +166,9 @@ def integrate(p : Polynomial, lower : float, upper : float):
 	primitive = Polynomial([0] + [coef / (i + 1) for (i, coef) in enumerate(p.coefficients)], p.degree + 1)
 	return primitive(upper) - primitive(lower)
 
+def primitive(p: Polynomial):
+	return Polynomial([0] + [coef / (i + 1) for (i, coef) in enumerate(p.coefficients)], p.degree + 1)
+
 def det(mat : Matrix3x3) -> float:
 	return mat[0][0]*(mat[1][1]*mat[2][2] - mat[2][1]*mat[1][2]) + mat[0][1]*(mat[1][2]*mat[2][0] - mat[2][2]*mat[1][0]) + mat[0][2]*(mat[1][0]*mat[2][1] - mat[1][1]*mat[2][0])
 

@@ -964,7 +964,7 @@ class ResultWidget:
             tipX = start.x if not endFirst else end.x
             tipY = start.y if not endFirst else end.y
 
-            scale = -1 
+            scale = -0.0001 if polyID != 2 else 0.0001
 
             startFactor = 1 if not endFirst else -1
 
