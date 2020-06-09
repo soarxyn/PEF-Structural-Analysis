@@ -950,31 +950,32 @@ class ResultWidget:
         self.canvas.pack(fill = BOTH, expand = True, side = TOP)
 
         for (i, beam) in enumerate(beams):
-            start = Point(beam[1].x, beam[1].y)
-            end = Point(beam[3].x, beam[3].y)
+            if polynomials[i] != None:
+                start = Point(beam[1].x, beam[1].y)
+                end = Point(beam[3].x, beam[3].y)
 
-            self.canvas.create_line((start, end), smooth = True, width = 5, fill="#404040")
+                self.canvas.create_line((start, end), smooth = True, width = 5, fill="#404040")
 
-            stressFunctions = polynomials[i][0]
-            endFirst = polynomials[i][1]
+                stressFunctions = polynomials[i][0]
+                endFirst = polynomials[i][1]
 
-            length = beam[0].length
-            angle = beam[2]
+                length = beam[0].length
+                angle = beam[2]
 
-            tipX = start.x if not endFirst else end.x
-            tipY = start.y if not endFirst else end.y
+                tipX = start.x if not endFirst else end.x
+                tipY = start.y if not endFirst else end.y
 
-            scale = -0.0001 if polyID != 2 else 0.0001
+                scale = -0.1 if polyID != 2 else 0.005
 
-            startFactor = 1 if not endFirst else -1
+                startFactor = 1 if not endFirst else -1
 
-            for j in range(0, 100):
-                fun = stressFunctions(polyID, j * length / 100)
-                print(fun)
+                for j in range(0, 100):
+                    fun = stressFunctions(polyID, j * length / 100)
+                    print(fun)
 
-                self.canvas.create_line(tipX, tipY, tipX, tipY + 20 * fun * scale)
-                tipX += 1 / 10 * length * pcos(angle) * startFactor
-                tipY += 1 / 10 * length * psin(angle) * startFactor
+                    self.canvas.create_line(tipX, tipY, tipX + 20 * fun * scale * pcos(90 - angle), tipY - 20 * fun * scale * psin(90 - angle))
+                    tipX += 1 / 10 * length * pcos(angle) * startFactor
+                    tipY -= 1 / 10 * length * psin(angle) * startFactor
 
 if __name__ == "__main__":
     root = tk.ThemedTk()
