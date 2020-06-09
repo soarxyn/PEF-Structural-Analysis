@@ -48,10 +48,10 @@ class Beam:
 				s: Polynomial
 				if endFirst:
 					n = -t[0].distribution
-					s = -t[1].distribution
+					s = t[1].distribution
 				else:
 					n = t[0].distribution
-					s = t[1].distribution
+					s = -t[1].distribution
 
 				b: Polynomial = Polynomial(s.coefficients.copy())
 				b.coefficients.insert(0, -resulting.z)
