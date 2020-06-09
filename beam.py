@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple, Union
-from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate, primitive
+from auxiliary.algebra import Vector3, Polynomial, psin, pcos, primitive
 from force import Concentrated, Distributed, Moment
 from support import Support
 
