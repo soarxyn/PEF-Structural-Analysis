@@ -22,7 +22,7 @@ class Beam:
 
 		return startPos + Vector3(point*pcos(angle), point*psin(angle), 0)
 
-	def solve(self, reaction: Vector3, endFirst: bool):
+	def solve(self, reaction: Vector3, endFirst: bool) -> Vector3:
 		self.stress = (list(), endFirst)
 		forces: List[Tuple[Union[Concentrated, Distributed], float, float]] = sorted(self.concentratedList + self.distributedList, key = lambda v: v[1], reverse = endFirst)
 
@@ -72,6 +72,8 @@ class Beam:
 				resulting += v
 
 		self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), self.length))
+		resulting.z -= resulting.y*abs(self.length - pos)
+		return resulting
 
 	def stressFunction(self, polyID: int, x: float) -> float:
 		if self.stress == None:
