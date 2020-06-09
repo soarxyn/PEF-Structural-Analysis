@@ -120,12 +120,10 @@ class System:
       solution[i] = (b.stressFunction, endFirst)
       b.solved = True
 
-      if endFirst:
-        for beam in b.start[1]:
-          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
-      else:
-        for beam in b.end[1]:
-          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+      for beam in b.start[1]:
+        solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+      for beam in b.end[1]:
+        solveBeamsDFS(beam, (b, v, self.beams[i][2]))
 
     solveBeamsDFS(DFSRoot, None)
 
