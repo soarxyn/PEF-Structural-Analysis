@@ -9,6 +9,7 @@ class Beam:
 		self.length: float = length
 		self.start: Tuple[Support, List[Beam]] = (None, list())	# beam can be attached to other
 		self.end: Tuple[Support, List[Beam]] = (None, list())		# beams or to a support
+		self.solved = False
 
 		self.concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
 		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order

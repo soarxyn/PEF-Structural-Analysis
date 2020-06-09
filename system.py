@@ -89,18 +89,20 @@ class System:
 
     else:
       raise Exception('System is not isostatic!')
-
-
+    
     solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
     def solveBeamsDFS(b: Beam, p: Union[Tuple[Beam, Vector3, float], None]):
-      v: Vector3
-      endFirst: bool
-      i: int
+      v: Vector3 = None
+      endFirst: bool = False
+      i: int = 0
 
       for i in range(len(self.beams)):
         if b == self.beams[i][0]:
           break
+        
+      if b.solved:
+        return
 
       if b.start[0] != None:
         v = rotate(b.start[0].reaction, -self.beams[i][2])
@@ -113,9 +115,10 @@ class System:
         endFirst = p[0] in b.end[1]
       else:
         raise Exception('Cannot find reaction!')
-
+      
       v = b.solve(v, endFirst)
       solution[i] = (b.stressFunction, endFirst)
+      b.solved = True
 
       if endFirst:
         for beam in b.start[1]:

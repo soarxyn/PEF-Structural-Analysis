@@ -146,7 +146,6 @@ class MainWidget:
 
         end = Point(end.x, start.y - (end.x  - start.x) * ptan(angle)) if abs(angle) != 90 else Point(start.x, end.y)
         length : float = round(dist(end, start) / 10, 1)
-        print(length)
 
         return (start, end, length, angle) 
 
@@ -175,19 +174,23 @@ class MainWidget:
                 for beamItem in self.system.beams:
                     if Point(beamItem[1].x, beamItem[1].y) == params[0]:
                         beamItem[0].start[1].append(addedBeam)
-                        addedBeam.start[1].append(addedBeam)
+                        addedBeam.start[1].append(beamItem[0])
                     elif Point(beamItem[1].x, beamItem[1].y) == params[1]:
                         beamItem[0].start[1].append(addedBeam)
-                        addedBeam.end[1].append(addedBeam)
+                        addedBeam.end[1].append(beamItem[0])
                     elif Point(beamItem[3].x, beamItem[3].y) == params[0]:
                         beamItem[0].end[1].append(addedBeam)
-                        addedBeam.start[1].append(addedBeam)
+                        addedBeam.start[1].append(beamItem[0])
                     elif Point(beamItem[3].x, beamItem[3].y) == params[1]:
                         beamItem[0].end[1].append(addedBeam)
-                        addedBeam.end[1].append(addedBeam)
+                        addedBeam.end[1].append(beamItem[0])
 
             self.actions.append(Action(related = [beam, length, params[0], params[1]], type = ActionType.ADD_BEAM))
             self.system.beams.append((addedBeam, Vector3(params[0].x, params[0].y, 0), params[3], Vector3(params[1].x, params[1].y, 0)))
+
+            print("---")
+            print(len(addedBeam.start[1]))
+            print(len(addedBeam.end[1]))
 
             if not params[0] in self.snapPoints:
                 self.snapPoints.append(params[0])
@@ -879,7 +882,7 @@ class SupportWidget:
                 self.degreesLabel.grid_remove()
 
         if selectedType == 0:
-            angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+            angle = float(self.angleContent.get()) if len(self.angleContent.get()) != 0 else 0
 
             tipX : float = self.master_force.x if position == 0 else self.beamEnd.x
             tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
@@ -915,7 +918,7 @@ class SupportWidget:
         tipY : float = self.master_force.y if position == 0 else self.beamEnd.y
 
         if selectedType == 0:
-            angle = float(self.angleContent.get()) - self.beamAngle if len(self.angleContent.get()) != 0 else 0
+            angle = float(self.angleContent.get()) if len(self.angleContent.get()) != 0 else 0
             supportInstance = Support("SIMPLE", angle)
             supportAsset = ImageTk.PhotoImage(Image.open("assets/simple.png").rotate(angle))
         
@@ -950,6 +953,12 @@ class ResultWidget:
         self.canvas.pack(fill = BOTH, expand = True, side = TOP)
 
         for (i, beam) in enumerate(beams):
+            if beam[0].start[0] != None:
+                print(beam[0].start[0].reaction)
+
+            if beam[0].end[0] != None:
+                print(beam[0].end[0].reaction)
+
             if polynomials[i] != None:
                 start = Point(beam[1].x, beam[1].y)
                 end = Point(beam[3].x, beam[3].y)
@@ -965,15 +974,14 @@ class ResultWidget:
                 tipX = start.x if not endFirst else end.x
                 tipY = start.y if not endFirst else end.y
 
-                scale = -0.1 if polyID != 2 else 0.005
+                scale = -0.5 if polyID != 2 else 0.05
 
                 startFactor = 1 if not endFirst else -1
 
                 for j in range(0, 100):
                     fun = stressFunctions(polyID, j * length / 100)
-                    print(fun)
 
-                    self.canvas.create_line(tipX, tipY, tipX + 20 * fun * scale * pcos(90 - angle), tipY - 20 * fun * scale * psin(90 - angle))
+                    self.canvas.create_line(tipX, tipY, tipX - 20 * fun * scale * pcos(90 + angle), tipY + 20 * fun * scale * psin(90 + angle))
                     tipX += 1 / 10 * length * pcos(angle) * startFactor
                     tipY -= 1 / 10 * length * psin(angle) * startFactor
 
