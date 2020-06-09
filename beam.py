@@ -7,15 +7,15 @@ from support import Support
 class Beam:
 	def __init__(self, length: float):
 		self.length: float = length
-		self.start: Tuple[Support, List[Beam]] = (None, list())	# beam can be attached to other
-		self.end: Tuple[Support, List[Beam]] = (None, list())		# beams or to a support
-		self.solved = False
+		self.start: Tuple[Union[Support, None], List[Beam]] = (None, list())	# beam can be attached to other
+		self.end: Tuple[Union[Support, None], List[Beam]] = (None, list())		# beams or to a support
+		self.solved: bool = False
 
 		self.concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
 		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
-		self.moment: Moment = None
+		self.moment: Union[Moment, None] = None
 
-		self.stress: Tuple[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], bool] = None
+		self.stress: Union[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], None] = None
 
 	def pointPos(self, startPos: Vector3, point: float, angle: float) -> Vector3:
 		if point > self.length or point < 0:
@@ -35,7 +35,7 @@ class Beam:
 			pos = self.length - force[1] if endFirst else force[1]
 			self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
 
-			resulting.z -= resulting.y*abs(pos - prev)
+			resulting.z -= resulting.y*(pos - prev)
 			v: Vector3
 			if isinstance(force[0], Distributed):
 				prev = pos
@@ -62,7 +62,8 @@ class Beam:
 				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
 				v = equivalent[0].forceVector(force[2])
 
-				resulting.z -= resulting.y*abs(pos - prev) + v.y*abs(pos - prev - equivalent[1])
+				resulting.z -= resulting.y*(pos - prev)
+				resulting.z -= v.y*equivalent[1] if endFirst else v.y*(pos - prev - equivalent[1])
 
 
 			else:
@@ -74,7 +75,7 @@ class Beam:
 				resulting += v
 
 		self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), self.length))
-		resulting.z -= resulting.y*abs(self.length - pos)
+		resulting.z -= resulting.y*(self.length - pos)
 		if endFirst:
 			if self.start[0] != None:
 				resulting -= self.start[0].reaction
@@ -88,9 +89,10 @@ class Beam:
 		if self.stress == None:
 			raise Exception('Beam yet to be solved!')
 
+		p: float
 		for i in range(len(self.stress[0])):
-			if x <= self.stress[0][i][1]:
-				p: float = self.stress[0][i - 1][1] if i > 0 else 0
-				return self.stress[0][i][0][polyID](abs(x - p))
+			if x < self.stress[0][i][1]:
+				p = self.stress[0][i - 1][1] if i > 0 else 0
+				return self.stress[0][i][0][polyID](x - p)
 
-		raise Exception('x out of range!')
+		return self.stress[0][len(self.stress) - 1][0][polyID](x - p)
