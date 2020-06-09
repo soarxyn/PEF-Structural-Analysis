@@ -74,13 +74,12 @@ class System:
 
       i = 0
       for s in supports:
-        if s[0].x != 0:
-          s[0].x *= r[i]
+        s[0].x *= r[i]
+        if s[0].x == 1 and s[0].y == 1:
           i += 1
 
-        if s[0].y != 0:
-          s[0].y *= r[i]
-          i += 1
+        s[0].y *= r[i]
+        i += 1
 
         if s[0].z != 0:
           s[0].z *= r[i]
