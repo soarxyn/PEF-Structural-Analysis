@@ -63,47 +63,51 @@ class Beam:
 
 		def normal(x: float) -> float:
 			d: int = 0
+
 			for i in range(len(stress)):
-				if x < stress[i][1]:
+				if stress[i][0][2].degree == 0:
+					d += 1
+
+				if x <= stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					if stress[i][0][2].degree == 0:
 						return integrate(stress[i][0][0], abs(x - p), forces[i - d][0].length) if endFirst else integrate(stress[i][0][0], 0, abs(x - p))
 					else:
 						return stress[i][0][0](abs(x - p))
 
-				if stress[i][0][2].degree == 0:
-					d += 1
-
 			return -resulting.x
 
 		def shear(x:float) -> float:
 			d: int = 0
+
 			for i in range(len(stress)):
-				if x < stress[i][1]:
+				if stress[i][0][2].degree == 0:
+					d += 1
+
+				if x <= stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					if stress[i][0][2].degree == 0:
 						return integrate(stress[i][0][1], abs(x - p), forces[i - d][0].length) if endFirst else integrate(stress[i][0][1], 0, abs(x - p))
 					else:
-						return stress[i][0][1](abs(x - p))
-
-				if stress[i][0][2].degree == 0:
-					d += 1
+						return stress[i][0][1](abs(x - p))			
 
 			return resulting.y
 
 		def bending(x: float) -> float:
 			d: int = 0
+
 			for i in range(len(stress)):
-				if x < stress[i][1]:
+				if stress[i][0][2].degree == 0:
+					d += 1
+
+				if x <= stress[i][1]:
 					p: float = stress[i - 1][1] if i > 0 else 0
 					if stress[i][0][2].degree == 0:
 						e: Tuple[Concentrated, float] = forces[i - d][0].equivalent(abs(x - p), forces[i - d][0].length) if endFirst else forces[i - d][0].equivalent(0, abs(x - p))
-						return stress[i][0][2](abs(x - p)) + e[0].y*e[1] if endFirst else stress[i][0][2][0] + e[0].y*abs(x - p - e[1])
+						v: Vector3 = e[0].forceVector(forces[i - d][2])
+						return stress[i][0][2](abs(x - p)) + v.y*e[1] if endFirst else stress[i][0][2](abs(x - p)) + v.y*abs(x - p - e[1])
 					else:
 						return stress[i][0][2](abs(x - p))
-
-				if stress[i][0][2].degree == 0:
-					d += 1
 
 			return resulting.y*abs(x - pos) - resulting.z
 
