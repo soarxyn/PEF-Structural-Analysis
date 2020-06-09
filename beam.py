@@ -82,7 +82,7 @@ class Beam:
 			if self.end[0] != None:
 				resulting -= self.end[0].reaction
 
-		return resulting
+		return -resulting if endFirst else resulting
 
 	def stressFunction(self, polyID: int, x: float) -> float:
 		if self.stress == None:
