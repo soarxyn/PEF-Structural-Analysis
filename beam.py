@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple, Union
-from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate
+from auxiliary.algebra import Vector3, Polynomial, psin, pcos, integrate, primitive
 from force import Concentrated, Distributed, Moment
 from support import Support
 
@@ -44,19 +44,17 @@ class Beam:
 				n: Polynomial
 				s: Polynomial
 				if endFirst:
-					n = -t[0].distribution
-					s = t[1].distribution
+					n = primitive(-t[0].distribution)
+					s = primitive(t[1].distribution)
 				else:
-					n = t[0].distribution
-					s = -t[1].distribution
+					n = primitive(t[0].distribution)
+					s = primitive(-t[1].distribution)
 
+				n.coefficients[0] -= resulting.x
+				s.coefficients[0] += resulting.y
 				b: Polynomial = Polynomial(s.coefficients.copy())
-				b.coefficients.insert(0, resulting.y)
-				b.degree = s.degree + 1
-
-				n.coefficients.append(-resulting.x)
-				s.coefficients.append(resulting.y)
-				b.coefficients.append(-resulting.z)
+				b = primitive(b)
+				b.coefficients[0] -= resulting.z
 
 				self.stress[0].append(((n, s, b), pos))
 
@@ -82,10 +80,6 @@ class Beam:
 		for i in range(len(self.stress[0])):
 			if x <= self.stress[0][i][1]:
 				p: float = self.stress[0][i - 1][1] if i > 0 else 0
-				f: Tuple[Polynomial, Polynomial, Polynomial] = self.stress[0][i][0]
-				if f[0].degree > 0:
-					return f[polyID].coefficients[f[polyID].degree + 1] + integrate(f[polyID], abs(x - p), abs(self.stress[0][i][1] - p)) if self.stress[1] else f[polyID].coefficients[f[polyID].degree + 1] + integrate(f[polyID], 0, abs(x - p))
-				else:
-					return f[polyID](abs(x - p))
+				return self.stress[0][i][0][polyID](abs(x - p))
 
 		raise Exception('x out of range!')
