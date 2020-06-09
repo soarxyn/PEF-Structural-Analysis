@@ -18,7 +18,7 @@ class System:
     result: Vector3
     r: List[float] = list()
 
-    DFSRoots: List[Beam] = list()
+    DFSRoot: Beam = None
 
     def scaleBeam(b):
       return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
@@ -27,11 +27,11 @@ class System:
     for beam in scaledBeams:
       if beam[0].start[0] != None:
         supports.append((beam[0].start[0].reaction, beam[1]))
-        DFSRoots.append(beam[0])
+        DFSRoot = beam[0]
 
       if beam[0].end[0] != None:
         supports.append((beam[0].end[0].reaction, beam[3]))
-        DFSRoots.append(beam[0])
+        DFSRoot = beam[0]
 
 
       for concentrated in beam[0].concentratedList:
@@ -93,10 +93,9 @@ class System:
 
     solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
-    def solveBeamsDFS(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
-      v: Vector3 = Vector3(0, 0 ,0)
+    def solveBeamsDFS(b: Beam, p: Union[Tuple[Beam, Vector3, float], None]):
+      v: Vector3
       endFirst: bool
-      s: Tuple[Vector3, float]
       i: int
 
       for i in range(len(self.beams)):
@@ -106,41 +105,25 @@ class System:
       if b.start[0] != None:
         v = rotate(b.start[0].reaction, self.beams[i][2])
         endFirst = False
-        for beam in b.end[1]:
-          solveBeamsDFS(beam, b)
-
       elif b.end[0] != None:
         v = rotate(b.end[0].reaction, self.beams[i][2])
         endFirst = True
-        for beam in b.start[1]:
-          solveBeamsDFS(beam, b)
-
       elif p != None:
-        if p in b.start[1]:
-          for beam in b.end[1]:
-            s = solveBeamsDFS(beam, b)
-            v += rotate(s[0], self.beams[i][2] - s[1])
-
-          endFirst = True
-
-        elif p in b.end[1]:
-          for beam in b.start[1]:
-            s = solveBeamsDFS(beam, b)
-            v += rotate(s[0], self.beams[i][2] - s[1])
-
-          endFirst = False
-
-        else:
-          raise Exception('Cannot find reaction!')
+        v = rotate(p[1], self.beams[i][2] - p[2])
+        endFirst = p[0] in b.end[1]
       else:
-        raise Exception('No parent given!')
+        raise Exception('Cannot find reaction!')
 
-      b.solve(v, endFirst)
+      v = b.solve(v, endFirst)
       solution[i] = (b.stressFunction, endFirst)
 
-      return (v, self.beams[i][2])
+      if endFirst:
+        for beam in b.start[1]:
+          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+      else:
+        for beam in b.end[1]:
+          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
 
-    for r in DFSRoots:
-      solveBeamsDFS(r, None)
+    solveBeamsDFS(DFSRoot, None)
 
     return solution
