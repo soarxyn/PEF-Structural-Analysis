@@ -1,6 +1,6 @@
 from typing import List, Tuple, Callable, Union
 from auxiliary.algebra import Vector3, Polynomial, Matrix3x3, solve, rotate
-from beam import Beam, StressFunctions
+from beam import Beam
 from force import Concentrated, Distributed, Moment
 from support import Support
 
@@ -9,7 +9,7 @@ class System:
     self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list() # the tuple vectors are the beam's start and end position, respectively, with respect to the
                                                                     # center of the coordinate system, while the float is its angle with respect to the x axis
 
-  def solveSystem(self) -> List[Tuple[StressFunctions, bool]]:
+  def solveSystem(self) -> List[Tuple[Callable[[int, float], float], bool]]:
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     b: Vector3 = Vector3(0, 0, 0)
 
@@ -90,7 +90,7 @@ class System:
       raise Exception('System is not isostatic!')
 
 
-    solution: List[Tuple[StressFunctions, bool]] = [None]*len(self.beams)
+    solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
     def solveBeamsDFS(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
       v: Vector3 = Vector3(0, 0 ,0)
@@ -129,7 +129,8 @@ class System:
       else:
         raise Exception('No parent given!')
 
-      solution[i] = (b.solve(v, endFirst), endFirst)
+      b.solve(v, endFirst)
+      solution[i] = (b.stressFunction, endFirst)
 
       return (v, self.beams[i][2])
 
