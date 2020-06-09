@@ -116,14 +116,21 @@ class System:
       else:
         raise Exception('Cannot find reaction!')
       
-      v = b.solve(v, endFirst)
+      if endFirst:
+        for beam in b.end[1]:
+          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+      else:
+        for beam in b.start[1]:
+          solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+
+      v2 = b.solve(v, endFirst)
       solution[i] = (b.stressFunction, endFirst)
       b.solved = True
 
       for beam in b.start[1]:
-        solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+        solveBeamsDFS(beam, (b, v2 if endFirst else v, self.beams[i][2]))
       for beam in b.end[1]:
-        solveBeamsDFS(beam, (b, v, self.beams[i][2]))
+        solveBeamsDFS(beam, (b, v if endFirst else v2, self.beams[i][2]))
 
     solveBeamsDFS(DFSRoot, None)
 
