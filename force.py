@@ -19,6 +19,9 @@ class Distributed:
 		self.distribution: Polynomial = Polynomial(distribution.coefficients.copy())
 
 	def equivalent(self, l: float, u: float) -> Tuple[Concentrated, float]:	# tuple float is the equivalent force's point of application
+		if l == u:
+			return (Concentrated(0), 0)
+
 		p1: Polynomial = Polynomial(self.distribution.coefficients.copy())
 		p1.coefficients.insert(0, 0)
 		p1.degree = self.distribution.degree + 1
