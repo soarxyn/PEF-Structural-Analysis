@@ -8,7 +8,7 @@ from collections import deque, namedtuple
 from math import dist, degrees, atan2, copysign
 from auxiliary.algebra import psin, pcos, ptan, Vector3, Polynomial
 from functools import partial
-from beam import Beam, StressFunctions
+from beam import Beam
 from PIL import ImageTk, Image
 from force import Concentrated, Distributed, Moment
 from support import Support, SupportType
@@ -955,7 +955,7 @@ class ResultWidget:
 
             self.canvas.create_line((start, end), smooth = True, width = 5, fill="#404040")
 
-            stressFunctions : StressFunctions = polynomials[i][0]
+            stressFunctions = polynomials[i][0]
             endFirst = polynomials[i][1]
 
             length = beam[0].length
@@ -964,12 +964,13 @@ class ResultWidget:
             tipX = start.x if not endFirst else end.x
             tipY = start.y if not endFirst else end.y
 
-            scale = -1 if polyID != 2 else 0.005
+            scale = -1 
 
             startFactor = 1 if not endFirst else -1
 
             for j in range(0, 100):
-                fun = stressFunctions[polyID](j * length / 100)
+                fun = stressFunctions(polyID, j * length / 100)
+                print(fun)
 
                 self.canvas.create_line(tipX, tipY, tipX, tipY + 20 * fun * scale)
                 tipX += 1 / 10 * length * pcos(angle) * startFactor
