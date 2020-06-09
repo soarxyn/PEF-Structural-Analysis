@@ -64,6 +64,7 @@ class Beam:
 
 				resulting.z -= v.y*abs(pos - prev - equivalent[1])
 
+
 			else:
 				v = force[0].forceVector(force[2])
 
@@ -74,6 +75,13 @@ class Beam:
 
 		self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), self.length))
 		resulting.z -= resulting.y*abs(self.length - pos)
+		if endFirst:
+			if self.start[0] != None:
+				resulting -= self.start[0].reaction
+		else:
+			if self.end[0] != None:
+				resulting -= self.end[0].reaction
+
 		return resulting
 
 	def stressFunction(self, polyID: int, x: float) -> float:
