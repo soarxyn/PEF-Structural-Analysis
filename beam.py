@@ -62,7 +62,7 @@ class Beam:
 				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
 				v = equivalent[0].forceVector(force[2])
 
-				resulting.z -= v.y*abs(pos - prev - equivalent[1])
+				resulting.z -= resulting.y*abs(pos - prev) + v.y*abs(pos - prev - equivalent[1])
 
 
 			else:
