@@ -15,11 +15,6 @@ class System:
 
     supports: List[Tuple[Vector3, Vector3]] = list() # the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
 
-    result: Vector3
-    r: List[float] = list()
-
-    DFSRoot: Beam = None
-
     def scaleBeam(b):
       return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
 
@@ -27,12 +22,9 @@ class System:
     for beam in scaledBeams:
       if beam[0].start[0] != None:
         supports.append((beam[0].start[0].reaction, beam[1]))
-        DFSRoot = beam[0]
 
       if beam[0].end[0] != None:
         supports.append((beam[0].end[0].reaction, beam[3]))
-        DFSRoot = beam[0]
-
 
       for concentrated in beam[0].concentratedList:
         force: Vector3 = concentrated[0].forceVector(concentrated[2] - beam[2])
@@ -69,8 +61,8 @@ class System:
 
 
     if i == 3:
-      result = solve(coefs, b)
-      r = [result.x, result.y, result.z]
+      result: Vector3 = solve(coefs, b)
+      r: List[float, float, float] = [result.x, result.y, result.z]
 
       i = 0
       for s in supports:
@@ -92,51 +84,48 @@ class System:
     
     solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
-    def solveBeamsDFS(b: Beam, p: Union[Tuple[Beam, Vector3, float], None]):
-      v: Vector3
-      vS: Vector3 = None
-      vE: Vector3 = None
+    def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
+      v: Vector3(0, 0, 0)
       endFirst: bool
-      i: int
-
       for i in range(len(self.beams)):
         if b == self.beams[i][0]:
           break
-        
-      if b.solved:
-        return
 
-      if b.start[0] != None:
-        v = rotate(b.start[0].reaction, -self.beams[i][2])
-        vS = Vector3(0, 0, 0)
+      if len(b.start[1]) == 0:
         endFirst = False
-      elif b.end[0] != None:
-        v = rotate(b.end[0].reaction, -self.beams[i][2])
-        vE = Vector3(0, 0, 0)
+        if b.start[0] != None:
+          v = rotate(b.start[0].reaction, -self.beams[i][2])
+      elif len(b.end[1]) == 0:
         endFirst = True
+        if b.end[0] != None:
+          v = rotate(b.end[0].reaction, -self.beams[i][2])
       elif p != None:
-        v = rotate(p[1], p[2] - self.beams[i][2])
-        endFirst = p[0] in b.end[1]
-        if endFirst:
-          vE = v
+        if p in b.start[1]:
+          endFirst = True
+          for c in b.end[1]:
+            r: Tuple[Vector3, float] = findReaction(c, b)
+            v += rotate(r[0], r[1] - self.beams[i][2])
+        elif p in b.end[1]:
+          endFirst = False
+          for c in b.start[1]:
+            r: Tuple[Vector3, float] = findReaction(c, b)
+            v += rotate(r[0], r[1] - self.beams[i][2])
         else:
-          vS = v
+          raise Exception('Cannot find parent!')
       else:
-        raise Exception('Cannot find reaction!')
+        raise Exception('Parent not given!')
 
-      if endFirst:
-        vS = b.solve(v, endFirst)
-      else:
-        vE = b.solve(v, endFirst)
-
+      v = b.solve(v, endFirst)
       solution[i] = (b.stressFunction, endFirst)
-      b.solved = True
+      return (v, self.beams[i][2])
 
-      for beam in b.start[1]:
-        solveBeamsDFS(beam, (b, vS, self.beams[i][2]))
-      for beam in b.end[1]:
-        solveBeamsDFS(beam, (b, vE, self.beams[i][2]))
-
-    solveBeamsDFS(DFSRoot, None)
+    for b in self.beams:
+      if len(b.start[1]) == 0 or len(b.end[1]) == 0:
+        findReaction(b, None)
+        for beam in b.start[1]:
+          findReaction(beam, b)
+        for beam in b.end[1]:
+          findReaction(beam, b)
+        break
 
     return solution
