@@ -93,9 +93,11 @@ class System:
     solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
     def solveBeamsDFS(b: Beam, p: Union[Tuple[Beam, Vector3, float], None]):
-      v: Vector3 = None
-      endFirst: bool = False
-      i: int = 0
+      v: Vector3
+      vS: Vector3 = None
+      vE: Vector3 = None
+      endFirst: bool
+      i: int
 
       for i in range(len(self.beams)):
         if b == self.beams[i][0]:
@@ -106,24 +108,34 @@ class System:
 
       if b.start[0] != None:
         v = rotate(b.start[0].reaction, -self.beams[i][2])
+        vS = Vector3(0, 0, 0)
         endFirst = False
       elif b.end[0] != None:
         v = rotate(b.end[0].reaction, -self.beams[i][2])
+        vE = Vector3(0, 0, 0)
         endFirst = True
       elif p != None:
         v = rotate(p[1], p[2] - self.beams[i][2])
         endFirst = p[0] in b.end[1]
+        if endFirst:
+          vE = v
+        else:
+          vS = v
       else:
         raise Exception('Cannot find reaction!')
 
-      v2 = b.solve(v, endFirst)
+      if endFirst:
+        vS = b.solve(v, endFirst)
+      else:
+        vE = b.solve(v, endFirst)
+
       solution[i] = (b.stressFunction, endFirst)
       b.solved = True
 
       for beam in b.start[1]:
-        solveBeamsDFS(beam, (b, v2 if endFirst else v, self.beams[i][2]))
+        solveBeamsDFS(beam, (b, vS, self.beams[i][2]))
       for beam in b.end[1]:
-        solveBeamsDFS(beam, (b, v if endFirst else v2, self.beams[i][2]))
+        solveBeamsDFS(beam, (b, vE, self.beams[i][2]))
 
     solveBeamsDFS(DFSRoot, None)
 
