@@ -18,7 +18,7 @@ class System:
     result: Vector3
     r: List[float] = list()
 
-    DFSRoot: Beam
+    DFSRoots: List[Beam] = list()
 
     def scaleBeam(b):
       return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
@@ -27,11 +27,11 @@ class System:
     for beam in scaledBeams:
       if beam[0].start[0] != None:
         supports.append((beam[0].start[0].reaction, beam[1]))
-        DFSRoot = beam[0]
+        DFSRoots.append(beam[0])
 
       if beam[0].end[0] != None:
         supports.append((beam[0].end[0].reaction, beam[3]))
-        DFSRoot = beam[0]
+        DFSRoots.append(beam[0])
 
 
       for concentrated in beam[0].concentratedList:
@@ -106,9 +106,14 @@ class System:
       if b.start[0] != None:
         v = rotate(b.start[0].reaction, self.beams[i][2])
         endFirst = False
+        for beam in b.end[1]:
+          solveBeamsDFS(beam, b)
+
       elif b.end[0] != None:
         v = rotate(b.end[0].reaction, self.beams[i][2])
         endFirst = True
+        for beam in b.start[1]:
+          solveBeamsDFS(beam, b)
 
       elif p != None:
         if p in b.start[1]:
@@ -135,7 +140,7 @@ class System:
 
       return (v, self.beams[i][2])
 
-
-    solveBeamsDFS(DFSRoot, None)
+    for r in DFSRoots:
+      solveBeamsDFS(r, None)
 
     return solution
