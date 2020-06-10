@@ -85,7 +85,7 @@ class System:
     solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
     def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
-      v: Vector3(0, 0, 0)
+      v: Vector3 = Vector3(0, 0, 0)
       endFirst: bool
       for i in range(len(self.beams)):
         if b == self.beams[i][0]:
@@ -120,12 +120,12 @@ class System:
       return (v, self.beams[i][2])
 
     for b in self.beams:
-      if len(b.start[1]) == 0 or len(b.end[1]) == 0:
-        findReaction(b, None)
-        for beam in b.start[1]:
-          findReaction(beam, b)
-        for beam in b.end[1]:
-          findReaction(beam, b)
+      if len(b[0].start[1]) == 0 or len(b[0].end[1]) == 0:
+        findReaction(b[0], None)
+        for beam in b[0].start[1]:
+          findReaction(beam, b[0])
+        for beam in b[0].end[1]:
+          findReaction(beam, b[0])
         break
 
     return solution
