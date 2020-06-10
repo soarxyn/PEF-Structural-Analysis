@@ -15,7 +15,7 @@ class Beam:
 		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
 		self.moment: Union[Moment, None] = None
 
-		self.stress: Union[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], None] = None
+		self.stress: Union[Tuple[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], bool], None] = None
 
 	def pointPos(self, startPos: Vector3, point: float, angle: float) -> Vector3:
 		if point > self.length or point < 0:
@@ -33,6 +33,8 @@ class Beam:
 		for force in forces:
 			prev: float = pos
 			pos = self.length - force[1] if endFirst else force[1]
+			if isinstance(force[0], Distributed) and endFirst:
+				pos -= force[0].length
 			self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos))
 
 			resulting.z -= resulting.y*(pos - prev)
@@ -41,38 +43,33 @@ class Beam:
 				prev = pos
 				pos += force[0].length
 
-				t: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
-				n: Polynomial
-				s: Polynomial
+				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
+				v = equivalent[0].forceVector(force[2])
 				if endFirst:
-					n = primitive(-t[0].distribution)
-					s = primitive(t[1].distribution)
-				else:
-					n = primitive(t[0].distribution)
-					s = primitive(-t[1].distribution)
+					resulting.z -= resulting.y*(pos - prev) + v.y*equivalent[1]
+					resulting -= v
 
+				t: Tuple[Distributed, Distributed] = force[0].angledComponents(force[2])
+
+				n: Polynomial= primitive(t[0].distribution)
 				n.coefficients[0] -= resulting.x
+				s: Polynomial = primitive(-t[1].distribution)
 				s.coefficients[0] += resulting.y
-				b: Polynomial = Polynomial(s.coefficients.copy())
-				b = primitive(b)
+				b = primitive(Polynomial(s.coefficients.copy()))
 				b.coefficients[0] -= resulting.z
 
 				self.stress[0].append(((n, s, b), pos))
 
-				equivalent: Tuple[Concentrated, float] = force[0].equivalent(0, force[0].length)
-				v = equivalent[0].forceVector(force[2])
-
-				resulting.z -= resulting.y*(pos - prev)
-				resulting.z -= v.y*equivalent[1] if endFirst else v.y*(pos - prev - equivalent[1])
-
+				if not endFirst:
+					resulting.z -= resulting.y*(pos - prev) + v.y*(pos - prev - equivalent[1])
+					resulting += v
 
 			else:
 				v = force[0].forceVector(force[2])
-
-			if endFirst:
-				resulting -= v
-			else:
-				resulting += v
+				if endFirst:
+					resulting -= v
+				else:
+					resulting += v
 
 		self.stress[0].append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), self.length))
 		resulting.z -= resulting.y*(self.length - pos)
@@ -93,6 +90,6 @@ class Beam:
 		for i in range(len(self.stress[0])):
 			if x < self.stress[0][i][1]:
 				p = self.stress[0][i - 1][1] if i > 0 else 0
-				return self.stress[0][i][0][polyID](x - p)
+				return self.stress[0][i][0][polyID](self.stress[0][i][1] - x) if self.stress[1] else self.stress[0][i][0][polyID](x - p)
 
-		return self.stress[0][len(self.stress) - 1][0][polyID](x - p)
+		return self.stress[0][-1][0][polyID](x - p)
