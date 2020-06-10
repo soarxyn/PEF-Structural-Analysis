@@ -73,14 +73,13 @@ class Beam:
 
     if endFirst:
       resulting.z += resulting.y*pos
-      if self.start[0] != None:
-        resulting -= rotate(self.start[0].reaction, -angle)
 
     self.stress.append(((Polynomial([-resulting.x]), Polynomial([resulting.y]), Polynomial([-resulting.z, resulting.y])), pos if endFirst else self.length))
     if endFirst:
       self.stress.reverse()
-
-    if not endFirst:
+      if self.start[0] != None:
+        resulting -= rotate(self.start[0].reaction, -angle)
+    else:
       resulting.z -= resulting.y*(self.length - pos)
       if self.end[0] != None:
         resulting -= rotate(self.end[0].reaction, -angle)
