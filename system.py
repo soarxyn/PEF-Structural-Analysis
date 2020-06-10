@@ -7,9 +7,9 @@ from support import Support
 class System:
   def __init__(self):
     self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list() # the tuple vectors are the beam's start and end position, respectively, with respect to the
-                                                                    # center of the coordinate system, while the float is its angle with respect to the x axis
+                                                                      # center of the coordinate system, while the float is its angle with respect to the x axis
 
-  def solveSystem(self) -> List[Tuple[Callable[[int, float], float], bool]]:
+  def solveSystem(self) -> List[Callable[[int, float], float]]:
     coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     b: Vector3 = Vector3(0, 0, 0)
 
@@ -81,10 +81,10 @@ class System:
 
     else:
       raise Exception('System is not isostatic!')
-    
-    solution: List[Tuple[Callable[[int, float], float], bool]] = [None]*len(self.beams)
 
-    def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:
+    solution: List[Callable[[int, float], float]] = [None]*len(self.beams)
+
+    def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:   # tuple float is the beam's angle
       v: Vector3 = Vector3(0, 0, 0)
       endFirst: bool
       for i in range(len(self.beams)):
@@ -115,8 +115,8 @@ class System:
       else:
         raise Exception('Parent not given!')
 
-      v = b.solve(v, endFirst)
-      solution[i] = (b.stressFunction, endFirst)
+      v = b.solve(v, self.beams[i][2], endFirst)
+      solution[i] = b.stressFunction
       return (v, self.beams[i][2])
 
     for b in self.beams:
