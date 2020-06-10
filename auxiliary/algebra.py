@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, Dict
 from itertools import product
 from functools import reduce
-from numpy import sin, cos, tan,  radians, sqrt
+from numpy import sin, cos, tan, radians, sqrt
 
 @dataclass
 class Vector3:
