@@ -6,14 +6,14 @@ from support import Support
 
 class System:
 	def __init__(self):
-		self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()	# the tuple vectors are the beam's start and end position, respectively, with respect to the
-																																		# center of the coordinate system, while the float is its angle with respect to the x axis
+		self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()  # the tuple vectors are the beam's start and end position, respectively, with respect to the
+		                                                                 # center of the coordinate system, while the float is its angle with respect to the x axis
 
 	def solveSystem(self) -> List[Callable[[int, float], float]]:
 		coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 		b: Vector3 = Vector3(0, 0, 0)
 
-		supports: List[Tuple[Vector3, Vector3]] = list()	# the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
+		supports: List[Tuple[Vector3, Vector3]] = list()  # the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
 
 		def scaleBeam(b):
 			return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
@@ -84,7 +84,7 @@ class System:
 
 		solution: List[Callable[[int, float], float]] = [None]*len(self.beams)
 
-		def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:	# tuple float is the beam's angle
+		def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:  # tuple float is the beam's angle
 			v: Vector3 = Vector3(0, 0, 0)
 			endFirst: bool
 			for i in range(len(self.beams)):

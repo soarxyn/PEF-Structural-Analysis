@@ -7,12 +7,12 @@ from support import Support
 class Beam:
 	def __init__(self, length: float):
 		self.length: float = length
-		self.start: Tuple[Union[Support, None], List[Beam]] = (None, list())	# beam can be attached to other
-		self.end: Tuple[Union[Support, None], List[Beam]] = (None, list())		# beams or to a support
+		self.start: Tuple[Union[Support, None], List[Beam]] = (None, list())  # beam can be attached to other
+		self.end: Tuple[Union[Support, None], List[Beam]] = (None, list())    # beams or to a support
 		self.solved: bool = False
 
-		self.concentratedList: List[Tuple[Concentrated, float, float]] = list()	# tuple floats are the relative
-		self.distributedList: List[Tuple[Distributed, float, float]] = list()		# position and angle, in that order
+		self.concentratedList: List[Tuple[Concentrated, float, float]] = list()  # tuple floats are the relative
+		self.distributedList: List[Tuple[Distributed, float, float]] = list()    # position and angle, in that order
 		self.moment: Union[Moment, None] = None
 
 		self.stress: Union[List[Tuple[Tuple[Polynomial, Polynomial, Polynomial], float]], None] = None
