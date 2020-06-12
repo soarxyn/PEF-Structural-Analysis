@@ -4,21 +4,26 @@ from beam import Beam
 from force import Concentrated, Distributed, Moment
 from support import Support
 
+# this class defines the system in which the mechanical forces interact with the beams
 class System:
 	def __init__(self):
+		# this member lists the beams in the system
 		self.beams: List[Tuple[Beam, Vector3, float, Vector3]] = list()  # the tuple vectors are the beam's start and end position, respectively, with respect to the
 		                                                                 # center of the coordinate system, while the float is its angle with respect to the x axis
 
+	# this function calculates the supports' reaction vectors, uses them to calculate the beams' stress functions
+	# and returns a list paired one to one with the self.beams's beams which contains the function that returns the beam's .stress function
 	def solveSystem(self) -> List[Callable[[int, float], float]]:
 		coefs: Matrix3x3 = Matrix3x3([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 		b: Vector3 = Vector3(0, 0, 0)
 
 		supports: List[Tuple[Vector3, Vector3]] = list()  # the first vector is the reaction force from the support and the second one is its position with respect to the center of the coordinate system
 
+		# this function scales the beams' dimensions to properly solve the system
 		def scaleBeam(b):
 			return (b[0], Vector3(b[1].x, -b[1].y, b[1].z)*0.1, b[2], Vector3(b[3].x, -b[3].y, b[3].z)*0.1)
 
-		scaledBeams = list(map(lambda b: scaleBeam(b), self.beams.copy()))
+		scaledBeams: List[Tuple[Beam, Vector3, float, Vector3]] = list(map(lambda b: scaleBeam(b), self.beams.copy()))
 		for beam in scaledBeams:
 			if beam[0].start[0] != None:
 				supports.append((beam[0].start[0].reaction, beam[1]))
@@ -34,7 +39,7 @@ class System:
 				b.z -= force.y*pos.x - force.x*pos.y
 
 			for distributed in beam[0].distributedList:
-				equivalent: Tuple[Concentrated, float] = distributed[0].equivalent(0, distributed[0].length)
+				equivalent: Tuple[Concentrated, float] = distributed[0].equivalent()
 				force: Vector3 = equivalent[0].forceVector(distributed[2] - beam[2])
 				pos: Vector3 = beam[0].pointPos(beam[1], distributed[1] + equivalent[1], beam[2])
 				b.x -= force.x
@@ -84,6 +89,8 @@ class System:
 
 		solution: List[Callable[[int, float], float]] = [None]*len(self.beams)
 
+		# this function searches through the beams following a DFS and solves them,
+		# and returns the reaction vector used for solving the parent beam
 		def findReaction(b: Beam, p: Union[Beam, None]) -> Tuple[Vector3, float]:  # tuple float is the beam's angle
 			v: Vector3 = Vector3(0, 0, 0)
 			endFirst: bool
