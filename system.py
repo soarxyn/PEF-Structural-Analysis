@@ -123,7 +123,7 @@ class System:
 				raise Exception('Parent not given!')
 
 			v = b.solve(v, self.beams[i][2], endFirst)
-			solution[i] = b.stressFunction
+			solution[i] = b.stress
 			return (v, self.beams[i][2])
 
 		for b in self.beams:
